@@ -756,9 +756,18 @@ async function startCamera() {
     });
     
     elements.cameraView.srcObject = cameraStream;
-    elements.cameraView.play().catch(e => {
-      console.error('攝像頭播放失敗:', e);
-    });
+    
+    // 等待 video 元素準備好再播放，避免競態條件
+    const playPromise = elements.cameraView.play();
+    
+    if (playPromise !== undefined) {
+      playPromise.catch(e => {
+        // 只有在不是 AbortError 的時候才報錯
+        if (e.name !== 'AbortError') {
+          console.error('攝像頭播放失敗:', e);
+        }
+      });
+    }
     
     return true;
   } catch (err) {
