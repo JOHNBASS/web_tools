@@ -5,82 +5,290 @@
   "difficulty": "normal",
   "duration": 30,
   "notes": [
-    // Intro
-    { "time": 0.5, "type": "hi-hat", "lane": 2 },
-    { "time": 1.0, "type": "hi-hat", "lane": 2 },
-    { "time": 1.5, "type": "hi-hat", "lane": 2 },
-    { "time": 2.0, "type": "hi-hat", "lane": 2 },
-    
-    // Verse 1
-    { "time": 2.5, "type": "bass", "lane": 0 },
-    { "time": 3.0, "type": "snare", "lane": 1 },
-    { "time": 3.5, "type": "hi-hat", "lane": 2 },
-    { "time": 4.0, "type": "bass", "lane": 0 },
-    
-    { "time": 4.5, "type": "snare", "lane": 1 },
-    { "time": 5.0, "type": "hi-hat", "lane": 2 },
-    { "time": 5.5, "type": "bass", "lane": 0 },
-    { "time": 6.0, "type": "snare", "lane": 1 },
-    
-    // Chorus
-    { "time": 6.5, "type": "crash", "lane": 3 },
-    { "time": 7.0, "type": "bass", "lane": 0 },
-    { "time": 7.5, "type": "snare", "lane": 1 },
-    { "time": 8.0, "type": "hi-hat", "lane": 2 },
-    
-    { "time": 8.5, "type": "bass", "lane": 0 },
-    { "time": 9.0, "type": "snare", "lane": 1 },
-    { "time": 9.5, "type": "hi-hat", "lane": 2 },
-    { "time": 10.0, "type": "bass", "lane": 0 },
-    
-    // Verse 2
-    { "time": 10.5, "type": "snare", "lane": 1 },
-    { "time": 11.0, "type": "hi-hat", "lane": 2 },
-    { "time": 11.5, "type": "bass", "lane": 0 },
-    { "time": 12.0, "type": "snare", "lane": 1 },
-    
-    { "time": 12.5, "type": "hi-hat", "lane": 2 },
-    { "time": 13.0, "type": "bass", "lane": 0 },
-    { "time": 13.5, "type": "snare", "lane": 1 },
-    { "time": 14.0, "type": "hi-hat", "lane": 2 },
-    
-    // Chorus 2
-    { "time": 14.5, "type": "crash", "lane": 3 },
-    { "time": 15.0, "type": "bass", "lane": 0 },
-    { "time": 15.5, "type": "snare", "lane": 1 },
-    { "time": 16.0, "type": "hi-hat", "lane": 2 },
-    
-    { "time": 16.5, "type": "bass", "lane": 0 },
-    { "time": 17.0, "type": "snare", "lane": 1 },
-    { "time": 17.5, "type": "hi-hat", "lane": 2 },
-    { "time": 18.0, "type": "bass", "lane": 0 },
-    
-    // Bridge
-    { "time": 18.5, "type": "snare", "lane": 1 },
-    { "time": 19.0, "type": "hi-hat", "lane": 2 },
-    { "time": 19.5, "type": "crash", "lane": 3 },
-    { "time": 20.0, "type": "bass", "lane": 0 },
-    
-    { "time": 20.5, "type": "snare", "lane": 1 },
-    { "time": 21.0, "type": "hi-hat", "lane": 2 },
-    { "time": 21.5, "type": "bass", "lane": 0 },
-    { "time": 22.0, "type": "snare", "lane": 1 },
-    
-    // Outro
-    { "time": 22.5, "type": "crash", "lane": 3 },
-    { "time": 23.0, "type": "bass", "lane": 0 },
-    { "time": 23.5, "type": "snare", "lane": 1 },
-    { "time": 24.0, "type": "hi-hat", "lane": 2 },
-    
-    { "time": 24.5, "type": "bass", "lane": 0 },
-    { "time": 25.0, "type": "snare", "lane": 1 },
-    { "time": 25.5, "type": "hi-hat", "lane": 2 },
-    { "time": 26.0, "type": "crash", "lane": 3 },
-    
-    { "time": 26.5, "type": "bass", "lane": 0 },
-    { "time": 27.0, "type": "snare", "lane": 1 },
-    { "time": 27.5, "type": "hi-hat", "lane": 2 },
-    { "time": 28.0, "type": "snare", "lane": 1 },
-    { "time": 28.5, "type": "crash", "lane": 3 }
+    {
+      "time": 0.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 1.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 1.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 2.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 2.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 3.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 3.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 4.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 4.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 5.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 5.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 6.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 6.5,
+      "type": "crash",
+      "lane": 3
+    },
+    {
+      "time": 7.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 7.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 8.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 8.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 9.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 9.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 10.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 10.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 11.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 11.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 12.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 12.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 13.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 13.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 14.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 14.5,
+      "type": "crash",
+      "lane": 3
+    },
+    {
+      "time": 15.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 15.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 16.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 16.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 17.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 17.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 18.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 18.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 19.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 19.5,
+      "type": "crash",
+      "lane": 3
+    },
+    {
+      "time": 20.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 20.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 21.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 21.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 22.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 22.5,
+      "type": "crash",
+      "lane": 3
+    },
+    {
+      "time": 23.0,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 23.5,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 24.0,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 24.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 25.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 25.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 26.0,
+      "type": "crash",
+      "lane": 3
+    },
+    {
+      "time": 26.5,
+      "type": "bass",
+      "lane": 0
+    },
+    {
+      "time": 27.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 27.5,
+      "type": "hi-hat",
+      "lane": 2
+    },
+    {
+      "time": 28.0,
+      "type": "snare",
+      "lane": 1
+    },
+    {
+      "time": 28.5,
+      "type": "crash",
+      "lane": 3
+    }
   ]
 }

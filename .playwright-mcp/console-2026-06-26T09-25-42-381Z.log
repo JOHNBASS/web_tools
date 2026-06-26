@@ -1,0 +1,17 @@
+[     844ms] [LOG] 遊戲初始化完成！ @ http://localhost:8765/main.js:163
+[    7535ms] [WARNING] 載入鼓譜失敗，使用預設鼓譜: SyntaxError: Unexpected token '/', ..."s": [
+    // Intro
+ "... is not valid JSON @ http://localhost:8765/main.js:400
+[    9057ms] [WARNING] MediaPipe 初始化失敗，改用觸控/鍵盤控制: Error: MediaPipe Hands 未載入 (CDN 無法存取)
+    at initMediaPipe (http://localhost:8765/main.js:669:11)
+    at HTMLButtonElement.startGame (http://localhost:8765/main.js:481:13) @ http://localhost:8765/main.js:483
+[    9058ms] [LOG] 遊戲已開始 @ http://localhost:8765/main.js:519
+[   66829ms] [LOG] 遊戲已結束 @ http://localhost:8765/main.js:627
+[   66937ms] [WARNING] 載入鼓譜失敗，使用預設鼓譜: SyntaxError: Unexpected token '/', ..."s": [
+    // Intro
+ "... is not valid JSON @ http://localhost:8765/main.js:400
+[   68456ms] [WARNING] MediaPipe 初始化失敗，改用觸控/鍵盤控制: Error: MediaPipe Hands 未載入 (CDN 無法存取)
+    at initMediaPipe (http://localhost:8765/main.js:669:11)
+    at startGame (http://localhost:8765/main.js:481:13) @ http://localhost:8765/main.js:483
+[   68457ms] [LOG] 遊戲已開始 @ http://localhost:8765/main.js:519
+[   69022ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0

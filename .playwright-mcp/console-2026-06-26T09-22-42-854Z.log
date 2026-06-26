@@ -1,0 +1,17 @@
+[    1125ms] [LOG] 遊戲初始化完成！ @ http://localhost:8765/main.js:158
+[    1174ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/favicon.ico:0
+[   19468ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/charts/normal/happy-birthday.json:0
+[   19468ms] [WARNING] 載入鼓譜失敗，使用預設鼓譜: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON @ http://localhost:8765/main.js:395
+[   30110ms] ReferenceError: Hands is not defined
+    at initMediaPipe (http://localhost:8765/main.js:655:3)
+    at HTMLButtonElement.startGame (http://localhost:8765/main.js:475:11)
+[   67628ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/charts/normal/happy-birthday.json:0
+[   67629ms] [WARNING] 載入鼓譜失敗，使用預設鼓譜: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON @ http://localhost:8765/main.js:395
+[   67838ms] ReferenceError: Hands is not defined
+    at initMediaPipe (http://localhost:8765/main.js:655:3)
+    at HTMLButtonElement.startGame (http://localhost:8765/main.js:475:11)
+[   69595ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8765/charts/normal/happy-birthday.json:0
+[   69595ms] [WARNING] 載入鼓譜失敗，使用預設鼓譜: SyntaxError: Unexpected token '<', "<!DOCTYPE "... is not valid JSON @ http://localhost:8765/main.js:395
+[   69795ms] ReferenceError: Hands is not defined
+    at initMediaPipe (http://localhost:8765/main.js:655:3)
+    at HTMLButtonElement.startGame (http://localhost:8765/main.js:475:11)

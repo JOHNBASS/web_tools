@@ -62,7 +62,10 @@ const elements = {
   judgment: document.getElementById('judgment'),
   gestureHint: document.getElementById('gesture-hint'),
   cameraView: document.getElementById('camera-view'),
-  
+  drumChart: document.querySelector('.drum-chart'),
+  handCanvas: document.getElementById('hand-canvas'),
+  detectionStatus: document.getElementById('detectionStatus'),
+
   // 按鈕
   startGameBtn: document.getElementById('startGameBtn'),
   howToPlayBtn: document.getElementById('howToPlayBtn'),
@@ -89,7 +92,7 @@ const elements = {
   sounds: {
     bass: document.getElementById('sound-bass'),
     snare: document.getElementById('sound-snare'),
-    hiHat: document.getElementById('sound-hi-hat'),
+    'hi-hat': document.getElementById('sound-hi-hat'),
     crash: document.getElementById('sound-crash')
   },
   
@@ -115,6 +118,12 @@ const CONSTANTS = {
     hard: { perfect: 30, good: 60, bad: 100 }
   },
   NOTE_SPEED: 3, // 音符下落速度 (px/ms)
+  LEAD_TIME: 2, // 音符從出現(頂端)到抵達判定線的秒數
+  DEFAULT_SONGS: {
+    easy: 'happy-birthday',
+    normal: 'smells-like-teen-spirit',
+    hard: 'uptown-funk'
+  },
   AUDIENCE_GROWTH: 0.1, // 觀眾每秒增加數
   AUDIENCE_DECAY: 0.2, // 觀眾每秒流失數 (無互動)
   OFFLINE_EARN_RATE: 0.5 // 離線收益倍率
@@ -130,6 +139,70 @@ const GESTURE_MAP = {
   'swipe_right': 'hi-hat',   // 快速左右揮手 (鈔鑼)
   'hands_up': 'crash'        // 双手上举 (鑼)
 };
+
+// ============================================
+// 手部骨架連線 (MediaPipe Hands 21 個關鍵點)
+// ============================================
+const HAND_CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],          // 拇指
+  [0,5],[5,6],[6,7],[7,8],          // 食指
+  [5,9],[9,10],[10,11],[11,12],     // 中指
+  [9,13],[13,14],[14,15],[15,16],   // 無名指
+  [13,17],[17,18],[18,19],[19,20],  // 小指
+  [0,17]                            // 手掌底
+];
+
+let hitFlashTimer = null;
+
+// 在攝像頭畫面上繪製偵測到的手部骨架，讓玩家確認手勢有被抓到
+function drawHandLandmarks(landmarks) {
+  const canvas = elements.handCanvas;
+  if (!canvas) return;
+  // 讓畫布內部解析度對齊顯示尺寸
+  const w = canvas.clientWidth || canvas.width;
+  const h = canvas.clientHeight || canvas.height;
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, w, h);
+
+  if (!landmarks || landmarks.length === 0) return;
+
+  // 連線
+  ctx.strokeStyle = '#00ff66';
+  ctx.lineWidth = 3;
+  HAND_CONNECTIONS.forEach(([a, b]) => {
+    const p1 = landmarks[a], p2 = landmarks[b];
+    if (!p1 || !p2) return;
+    ctx.beginPath();
+    ctx.moveTo(p1.x * w, p1.y * h);
+    ctx.lineTo(p2.x * w, p2.y * h);
+    ctx.stroke();
+  });
+
+  // 關鍵點
+  ctx.fillStyle = '#ff4444';
+  landmarks.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x * w, p.y * h, 5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+}
+
+function clearHandCanvas() {
+  const canvas = elements.handCanvas;
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+// 更新「是否偵測到手部」的狀態徽章
+function setDetectionStatus(state, text) {
+  const el = elements.detectionStatus;
+  if (!el) return;
+  el.className = 'detection-status' + (state ? ' ' + state : '');
+  if (text !== undefined) el.textContent = text;
+}
 
 // ============================================
 // MediaPipe 相關
@@ -441,17 +514,6 @@ function generateNotes() {
   updateGestureHint();
 }
 
-function createNoteElement(note) {
-  const lane = elements.lanes[note.lane];
-  if (!lane) return;
-  
-  const noteElement = document.createElement('div');
-  noteElement.className = `note ${note.type}`;
-  noteElement.dataset.id = note.id;
-  noteElement.style.transform = `translateY(${note.y}px)`;
-  lane.appendChild(noteElement);
-}
-
 function updateGestureHint() {
   if (!gameState.currentChart || !gameState.currentChart.notes || 
       gameState.nextNoteIndex >= gameState.currentChart.notes.length) {
@@ -471,21 +533,32 @@ function updateGestureHint() {
 async function startGame() {
   if (gameState.isPlaying) return;
   
-  // 載入鼓譜
-  await loadChart(gameState.difficulty, 'happy-birthday');
-  
+  // 載入鼓譜 (依難度選擇對應歌曲)
+  await loadChart(gameState.difficulty, CONSTANTS.DEFAULT_SONGS[gameState.difficulty] || 'happy-birthday');
+
   // 重置遊戲狀態
   resetGameState();
-  
-  // 啟動攝像頭 (如果啟用)
-  const cameraOK = gameState.cameraEnabled ? await startCamera() : false;
-  
+
+  // 啟動攝像頭 (如果啟用)。MediaPipe 來自 CDN，若無法載入則自動降級為觸控/鍵盤
+  let cameraOK = gameState.cameraEnabled ? await startCamera() : false;
+
   if (cameraOK) {
-    await initMediaPipe();
-    startMediaPipeCamera();
-  } else {
-    // 如果攝像頭失敗，顯示觸控控制
+    try {
+      await initMediaPipe();
+      startMediaPipeCamera();
+      setDetectionStatus('', '🖐 揮動手部來敲鼓');
+    } catch (err) {
+      console.warn('MediaPipe 初始化失敗，改用觸控/鍵盤控制:', err);
+      cameraOK = false;
+      stopCamera();
+    }
+  }
+
+  if (!cameraOK) {
+    // 攝像頭或手勢辨識不可用，顯示觸控控制
     elements.touchControls.style.display = 'flex';
+    clearHandCanvas();
+    setDetectionStatus('', '⌨️ 觸控/鍵盤模式 (無攝像頭)');
   }
   
   // 顯示遊戲畫面
@@ -620,7 +693,11 @@ function endGame() {
   
   // 隱藏觸控控制
   elements.touchControls.style.display = 'none';
-  
+
+  // 清除手部骨架繪製與偵測狀態
+  clearHandCanvas();
+  setDetectionStatus('', '📷 攝像頭啟動中…');
+
   console.log('遊戲已結束');
 }
 
@@ -661,6 +738,9 @@ function stopCamera() {
 // MediaPipe 初始化
 // ============================================
 async function initMediaPipe() {
+  if (typeof Hands === 'undefined') {
+    throw new Error('MediaPipe Hands 未載入 (CDN 無法存取)');
+  }
   hands = new Hands({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.165/${file}`;
@@ -672,12 +752,34 @@ async function initMediaPipe() {
   });
   
   hands.onResults((results) => {
-    if (results.multiHandLandmarks && gameState.isPlaying && !gameState.isPaused) {
-      const landmarks = results.multiHandLandmarks[0];
+    const landmarks = results.multiHandLandmarks && results.multiHandLandmarks[0];
+
+    // 繪製手部骨架，讓玩家看到自己的手有沒有被抓到
+    drawHandLandmarks(landmarks);
+
+    if (landmarks && landmarks.length) {
+      setDetectionStatus('detected', '✋ 偵測到手部 ✓');
+    } else {
+      setDetectionStatus('', '🖐 揮動手部來敲鼓');
+    }
+
+    if (landmarks && gameState.isPlaying && !gameState.isPaused) {
       const gesture = detectGesture(landmarks);
       if (gesture) {
         triggerDrum(gesture, Date.now());
         gameState.lastInteractionTime = Date.now();
+
+        // 偵測到手勢 → 徽章閃一下並顯示對應的鼓
+        const drumType = GESTURE_MAP[gesture];
+        const drumIndex = CONSTANTS.DRUM_TYPES.indexOf(drumType);
+        const label = drumIndex >= 0
+          ? `${CONSTANTS.DRUM_EMOJIS[drumIndex]} ${CONSTANTS.DRUM_NAMES[drumIndex]}!`
+          : '🥁 敲擊!';
+        setDetectionStatus('hit', label);
+        if (hitFlashTimer) clearTimeout(hitFlashTimer);
+        hitFlashTimer = setTimeout(() => {
+          setDetectionStatus('detected', '✋ 偵測到手部 ✓');
+        }, 250);
       }
     }
   });
@@ -685,7 +787,10 @@ async function initMediaPipe() {
 
 function startMediaPipeCamera() {
   if (!hands || !cameraStream) return;
-  
+  if (typeof Camera === 'undefined') {
+    throw new Error('MediaPipe Camera 未載入 (CDN 無法存取)');
+  }
+
   camera = new Camera(elements.cameraView, {
     onFrame: async () => {
       await hands.send({ image: elements.cameraView });
@@ -893,13 +998,94 @@ function showJudgment(result) {
 // ============================================
 // 音效播放
 // ============================================
+// 本地 .mp3 音效檔已損毀 (實際是 HTML 錯誤頁)，改用 Web Audio API 即時合成鼓聲
+let audioCtx = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    audioCtx = new AudioCtx();
+  }
+  // 瀏覽器要求使用者互動後才能播放，遊戲由點擊「開始」觸發，這裡確保已 resume
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function createNoiseSource(ctx, duration) {
+  const bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  return source;
+}
+
 function playSound(drumType) {
-  const sound = elements.sounds[drumType];
-  if (sound) {
-    sound.currentTime = 0;
-    sound.play().catch(err => {
-      console.error('播放音效失敗:', err);
-    });
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+
+    const t = ctx.currentTime;
+    const vol = gameState.volume / 100;
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+
+    if (drumType === 'bass') {
+      // 大鼓：低頻正弦波 + 快速下滑
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, t);
+      osc.frequency.exponentialRampToValueAtTime(50, t + 0.12);
+      gain.gain.setValueAtTime(vol, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+      osc.connect(gain);
+      osc.start(t);
+      osc.stop(t + 0.3);
+    } else if (drumType === 'snare') {
+      // 軍鼓：高通白噪音 + 短促衰減
+      const noise = createNoiseSource(ctx, 0.2);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 1000;
+      gain.gain.setValueAtTime(vol * 0.8, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+      noise.connect(filter);
+      filter.connect(gain);
+      noise.start(t);
+      noise.stop(t + 0.2);
+    } else if (drumType === 'hi-hat') {
+      // 鈔鑼：極短高頻噪音
+      const noise = createNoiseSource(ctx, 0.05);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 7000;
+      gain.gain.setValueAtTime(vol * 0.5, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+      noise.connect(filter);
+      filter.connect(gain);
+      noise.start(t);
+      noise.stop(t + 0.05);
+    } else if (drumType === 'crash') {
+      // 鑼：較長的高頻噪音衰減
+      const noise = createNoiseSource(ctx, 0.6);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 5000;
+      gain.gain.setValueAtTime(vol * 0.6, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      noise.connect(filter);
+      filter.connect(gain);
+      noise.start(t);
+      noise.stop(t + 0.6);
+    }
+  } catch (err) {
+    console.error('播放音效失敗:', err);
   }
 }
 
@@ -912,7 +1098,7 @@ function gameLoop(timestamp) {
   }
   
   // 更新音符位置
-  updateNotes(timestamp);
+  updateNotes();
   
   // 更新觀眾數量
   const now = Date.now();
@@ -944,24 +1130,28 @@ function gameLoop(timestamp) {
 // ============================================
 // 更新音符位置
 // ============================================
-function updateNotes(timestamp) {
-  const now = timestamp - gameState.startTime;
-  const laneHeight = elements.drumChart.offsetHeight;
+function updateNotes() {
+  // 與 triggerDrum/判定系統使用同一時鐘 (Date.now)，避免 requestAnimationFrame
+  // 的時間戳 (performance.now) 與 startTime 混用導致數值錯亂
+  const now = Date.now() - gameState.startTime; // ms
+  const laneHeight = elements.drumChart ? elements.drumChart.offsetHeight : 200;
   const noteHeight = 18;
-  
+  const leadMs = CONSTANTS.LEAD_TIME * 1000;
+
   for (let i = 0; i < gameState.notes.length; i++) {
     const note = gameState.notes[i];
-    
-    // 计算音符应该出现的时间 (毫秒)
+
+    // 音符判定時間 (ms) 與其在頂端出現的時間
     const noteTime = note.time * 1000;
-    
-    // 如果音符还没到出现时间，跳过
-    if (noteTime > now) continue;
-    
-    // 计算音符的 y 位置
-    const progress = (now - noteTime) / 1000; // 秒
-    note.y = progress * CONSTANTS.NOTE_SPEED * 10;
-    
+    const appearTime = noteTime - leadMs;
+
+    // 還沒到出現時間，跳過
+    if (now < appearTime) continue;
+
+    // 位置: appearTime → y=0 (頂端)，noteTime → y=laneHeight (判定線)
+    const progress = (now - appearTime) / leadMs;
+    note.y = progress * laneHeight;
+
     // 如果音符已经超出屏幕，移除
     if (note.y > laneHeight + noteHeight) {
       const noteElement = document.querySelector(`.note[data-id="${note.id}"]`);
@@ -970,13 +1160,13 @@ function updateNotes(timestamp) {
       }
       continue;
     }
-    
+
     // 更新音符位置
     let noteElement = document.querySelector(`.note[data-id="${note.id}"]`);
     if (!noteElement) {
       noteElement = createNoteElement(note);
     }
-    
+
     if (noteElement) {
       noteElement.style.transform = `translateY(${note.y}px)`;
     }

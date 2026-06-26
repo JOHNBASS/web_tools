@@ -56,8 +56,11 @@
       <!-- 攝像頭容器 -->
       <div class="camera-container">
         <video id="camera-view" autoplay playsinline muted></video>
+        <!-- 手部偵測繪製層 (顯示 MediaPipe 抓到的手部骨架) -->
+        <canvas id="hand-canvas" class="hand-canvas"></canvas>
+        <!-- 手部偵測狀態徽章 -->
+        <div class="detection-status" id="detectionStatus">📷 攝像頭啟動中…</div>
         <div class="camera-overlay">
-          <p>請揮手敲鼓！</p>
           <p id="gesture-hint">↑ 單手揮動 = 軍鼓 🪘</p>
         </div>
       </div>

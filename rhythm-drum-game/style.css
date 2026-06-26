@@ -208,21 +208,63 @@ body {
   transform: scaleX(-1); /* 镜像 */
 }
 
-.camera-overlay {
+/* 手部骨架繪製層：與 video 同樣鏡像，疊在攝像頭畫面上 */
+.hand-canvas {
   position: absolute;
   top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1); /* 與 video 鏡像一致 */
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* 手部偵測狀態徽章 */
+.detection-status {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: bold;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.15s ease;
+  pointer-events: none;
+}
+
+.detection-status.detected {
+  background: rgba(0, 200, 80, 0.85);
+  border-color: #00ff66;
+  box-shadow: 0 0 12px rgba(0, 255, 102, 0.6);
+}
+
+.detection-status.hit {
+  background: rgba(255, 180, 0, 0.95);
+  border-color: #ffcc00;
+  box-shadow: 0 0 18px rgba(255, 200, 0, 0.9);
+  transform: scale(1.08);
+}
+
+.camera-overlay {
+  position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  background: rgba(0, 0, 0, 0.3);
+  padding-bottom: 8px;
   color: white;
   font-size: 20px;
   pointer-events: none;
   text-align: center;
+  z-index: 3;
 }
 
 .camera-overlay p {
