@@ -1,57 +1,572 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>房貸現金流計算機</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="房貸現金流計算機 - 精準計算台灣房貸寬限期月繳、本息攤還月繳及現金流分析，協助您評估房貸負擔與租金收益平衡點">
+<meta name="keywords" content="房貸計算機,房貸現金流,月繳計算,本息攤還,寬限期,房貸工具,台灣房貸,現金流分析">
+<meta property="og:title" content="房貸現金流計算機 - 精準房貸計算工具">
+<meta property="og:description" content="精準計算台灣房貸寬限期月繳、本息攤還月繳及現金流分析，協助您評估房貸負擔與租金收益平衡點">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yourdomain.com/mortgage-calculator.html">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="房貸現金流計算機 - 精準房貸計算工具">
+<meta name="twitter:description" content="精準計算台灣房貸寬限期月繳、本息攤還月繳及現金流分析">
+<title>房貸現金流計算機 - 精準房貸計算工具</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-body{font-family:Arial,sans-serif;max-width:900px;margin:20px auto;padding:20px}
-input{width:120px;padding:6px}
-table{border-collapse:collapse}
-td{padding:6px}
-.result{background:#f5f5f5;padding:12px;margin-top:15px;border-radius:8px}
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #dbeafe;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --bg: #f8fafc;
+  --card-bg: #ffffff;
+  --text: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --input-border: #cbd5e1;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, #1e40af 100%);
+  color: white;
+  padding: 2rem 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.header-content {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header .back-link {
+  color: white;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.header .back-link:hover {
+  opacity: 1;
+}
+
+.header h1 {
+  font-size: 1.875rem;
+  font-weight: 700;
+  flex: 1;
+  text-align: center;
+}
+
+/* Calculator Card */
+.calculator-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 2rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.calculator-title {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.calculator-title h2 {
+  font-size: 1.5rem;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.calculator-title p {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+/* Input Group */
+.input-group {
+  margin-bottom: 1.5rem;
+}
+
+.input-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.input-label .required {
+  color: var(--danger);
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.input-field {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-sm);
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  background: var(--card-bg);
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.input-field::placeholder {
+  color: var(--text-muted);
+}
+
+.input-unit {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  white-space: nowrap;
+}
+
+/* Tablet Layout */
+@media (min-width: 640px) {
+  .input-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .input-group.full-width {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Button */
+.calc-btn {
+  width: 100%;
+  padding: 1rem 2rem;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 1.125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.calc-btn:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.calc-btn:active {
+  transform: translateY(0);
+}
+
+/* Result Section */
+.result-section {
+  margin-top: 2rem;
+  background: linear-gradient(135deg, var(--primary-light) 0%, #bfdbfe 100%);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 1px solid #bae6fd;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.result-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.result-item {
+  background: var(--card-bg);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.result-label {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  min-width: 120px;
+}
+
+.result-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.result-value.highlight {
+  color: var(--success);
+}
+
+.result-value.warning {
+  color: var(--warning);
+}
+
+.result-value.danger {
+  color: var(--danger);
+}
+
+.result-note {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+/* Info Section */
+.info-section {
+  margin-top: 2rem;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+}
+
+.info-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.info-content {
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+  line-height: 1.7;
+}
+
+.info-content ul {
+  padding-left: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.info-content li {
+  margin-bottom: 0.5rem;
+}
+
+/* Footer */
+.footer {
+  background: var(--text);
+  color: white;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.footer p {
+  opacity: 0.8;
+  font-size: 0.9375rem;
+}
+
+.footer a {
+  color: var(--primary-light);
+  text-decoration: none;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .container {
+    padding: 1.5rem 1rem;
+  }
+  
+  .header {
+    padding: 1.5rem 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+    text-align: left;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .calculator-card {
+    padding: 1.5rem;
+  }
+  
+  .calculator-title h2 {
+    font-size: 1.25rem;
+  }
+  
+  .input-field {
+    padding: 0.75rem 1rem;
+  }
+  
+  .result-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .result-label {
+    min-width: auto;
+    font-size: 0.8125rem;
+  }
+  
+  .result-value {
+    font-size: 1.125rem;
+  }
+  
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.25rem;
+  }
+  
+  .input-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .calc-btn {
+    padding: 0.875rem 1.5rem;
+    font-size: 1rem;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.calculator-card,
+.result-section,
+.info-section {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+.calculator-card { animation-delay: 0.1s; }
+.result-section { animation-delay: 0.2s; }
+.info-section { animation-delay: 0.3s; }
 </style>
 </head>
 <body>
-<h2>房貸現金流計算機</h2>
+<header class="header">
+  <div class="header-content">
+    <a href="index.html" class="back-link">
+      ← 返回首頁
+    </a>
+    <h1>🏠 房貸現金流計算機</h1>
+  </div>
+</header>
 
-<table>
-<tr><td>貸款金額</td><td><input id="loan" value="7000000"></td></tr>
-<tr><td>利率(%)</td><td><input id="rate" value="2.275"></td></tr>
-<tr><td>貸款年限</td><td><input id="years" value="30"></td></tr>
-<tr><td>寬限期(年)</td><td><input id="grace" value="2"></td></tr>
-<tr><td>每月租金</td><td><input id="rent" value="25000"></td></tr>
-</table>
+<main class="container">
+  <div class="calculator-card">
+    <div class="calculator-title">
+      <h2>房貸現金流分析</h2>
+      <p>精準計算寬限期與本息攤還的月繳及現金流</p>
+    </div>
+    
+    <div class="input-grid">
+      <div class="input-group">
+        <label class="input-label">
+          貸款金額 <span class="required">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input type="number" id="loan" value="7000000" class="input-field" placeholder="請輸入貸款金額">
+          <span class="input-unit">元</span>
+        </div>
+      </div>
+      
+      <div class="input-group">
+        <label class="input-label">
+          利率 <span class="required">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input type="number" id="rate" value="2.275" step="0.001" class="input-field" placeholder="請輸入年利率">
+          <span class="input-unit">%</span>
+        </div>
+      </div>
+      
+      <div class="input-group">
+        <label class="input-label">
+          貸款年限 <span class="required">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input type="number" id="years" value="30" class="input-field" placeholder="請輸入貸款年限">
+          <span class="input-unit">年</span>
+        </div>
+      </div>
+      
+      <div class="input-group">
+        <label class="input-label">
+          寬限期 <span class="required">*</span>
+        </label>
+        <div class="input-wrapper">
+          <input type="number" id="grace" value="2" class="input-field" placeholder="請輸入寬限期">
+          <span class="input-unit">年</span>
+        </div>
+      </div>
+      
+      <div class="input-group full-width">
+        <label class="input-label">
+          每月租金收入
+        </label>
+        <div class="input-wrapper">
+          <input type="number" id="rent" value="25000" class="input-field" placeholder="請輸入每月租金">
+          <span class="input-unit">元</span>
+        </div>
+      </div>
+    </div>
+    
+    <button class="calc-btn" onclick="calc()">
+      🔄 重新計算
+    </button>
+  </div>
+  
+  <div class="result-section">
+    <div class="result-header">
+      📊 計算結果
+    </div>
+    <div class="result-grid" id="out"></div>
+  </div>
+  
+  <div class="info-section">
+    <div class="info-title">
+      💡 使用說明
+    </div>
+    <div class="info-content">
+      <p>本工具協助您計算房貸的現金流狀況：</p>
+      <ul>
+        <li><strong>寬限期月繳：</strong>寬限期內只需繳納利息，不需償還本金</li>
+        <li><strong>本息攤還月繳：</strong>寬限期後，需償還本金及利息的月繳金額</li>
+        <li><strong>寬限期現金流：</strong>租金收入 - 寬限期月繳 = 每月淨現金流</li>
+        <li><strong>本息攤還現金流：</strong>租金收入 - 本息攤還月繳 = 寬限期後每月淨現金流</li>
+        <li><strong>打平貸款金額：</strong>以目前租金收入，可承擔的貸款金額上限</li>
+      </ul>
+      <p><em>⚠️ 請注意：此為估算值，實際數字請以銀行公告為準</em></p>
+    </div>
+  </div>
+</main>
 
-<button onclick="calc()">計算</button>
-
-<div class="result" id="out"></div>
+<footer class="footer">
+  <div class="container">
+    <p>© 2024 財務工具集 | 適用於台灣房貸市場 | <a href="index.html">返回首頁</a></p>
+  </div>
+</footer>
 
 <script>
-function calc(){
- let P=parseFloat(document.getElementById('loan').value);
- let annual=parseFloat(document.getElementById('rate').value)/100;
- let years=parseFloat(document.getElementById('years').value);
- let rent=parseFloat(document.getElementById('rent').value);
-
- let r=annual/12;
- let n=years*12;
-
- let interestOnly=P*annual/12;
- let payment=P*r/(1-Math.pow(1+r,-n));
-
- document.getElementById('out').innerHTML=`
- <b>寬限期月繳：</b>${interestOnly.toFixed(0)} 元<br>
- <b>本息攤還月繳：</b>${payment.toFixed(0)} 元<br><br>
-
- <b>寬限期現金流：</b>${(rent-interestOnly).toFixed(0)} 元/月<br>
- <b>本息攤還現金流：</b>${(rent-payment).toFixed(0)} 元/月<br><br>
-
- <b>若租金=${rent.toFixed(0)}元，打平貸款金額約：</b>
- ${(25000/payment*P).toFixed(0)} 元
- `;
+function calc() {
+  let P = parseFloat(document.getElementById('loan').value) || 0;
+  let annual = (parseFloat(document.getElementById('rate').value) || 0) / 100;
+  let years = parseFloat(document.getElementById('years').value) || 0;
+  let rent = parseFloat(document.getElementById('rent').value) || 0;
+  
+  let r = annual / 12;
+  let n = years * 12;
+  
+  let interestOnly = P * annual / 12;
+  let payment = P * r / (1 - Math.pow(1 + r, -n));
+  
+  // 計算打平貸款金額
+  let maxLoan = (rent / payment) * P;
+  
+  let graceCashFlow = rent - interestOnly;
+  let amortizingCashFlow = rent - payment;
+  
+  // 判斷現金流是否為正
+  let graceCashFlowClass = graceCashFlow >= 0 ? 'highlight' : 'danger';
+  let amortizingCashFlowClass = amortizingCashFlow >= 0 ? 'highlight' : 'danger';
+  
+  document.getElementById('out').innerHTML = `
+    <div class="result-item">
+      <span class="result-label">寬限期月繳</span>
+      <span class="result-value">${interestOnly.toFixed(0)} 元/月</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">本息攤還月繳</span>
+      <span class="result-value">${payment.toFixed(0)} 元/月</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">寬限期現金流</span>
+      <span class="result-value ${graceCashFlowClass}">${graceCashFlow.toFixed(0)} 元/月</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">本息攤還現金流</span>
+      <span class="result-value ${amortizingCashFlowClass}">${amortizingCashFlow.toFixed(0)} 元/月</span>
+    </div>
+    <div class="result-item">
+      <span class="result-label">打平貸款金額</span>
+      <span class="result-value">≈ ${maxLoan.toFixed(0)} 元</span>
+    </div>
+    <div class="result-note">
+      📝 以目前租金 ${rent.toFixed(0)} 元計算，建議貸款金額上限約 ${maxLoan.toFixed(0)} 元
+    </div>
+  `;
 }
+
+// 頁面載入時自動計算一次
 calc();
 </script>
 </body>
