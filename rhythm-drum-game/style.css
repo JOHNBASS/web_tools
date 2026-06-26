@@ -30,7 +30,10 @@
 
 html, body {
   height: 100%;
+  width: 100%;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 body {
@@ -40,6 +43,9 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+  /* 防止 iOS 彈跳效果 */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ============================================
@@ -47,7 +53,8 @@ body {
    ============================================ */
 .menu-container,
 .how-to-play-container,
-.settings-container {
+.settings-container,
+.game-container {
   position: fixed;
   top: 0;
   left: 0;
@@ -58,6 +65,8 @@ body {
   align-items: center;
   background: var(--bg-darker);
   z-index: 1000;
+  /* 確保容器內部也不能滑動 */
+  overflow: hidden;
 }
 
 .menu-content,
@@ -65,12 +74,16 @@ body {
 .settings-content {
   max-width: 500px;
   width: 90%;
+  max-height: 90vh;
   background: rgba(20, 20, 20, 0.95);
   border-radius: 20px;
   padding: 40px 30px;
   text-align: center;
   border: 2px solid var(--primary);
   box-shadow: 0 0 30px rgba(255, 68, 68, 0.3);
+  /* 防止內容溢出導致滑動 */
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .menu-content h1 {
