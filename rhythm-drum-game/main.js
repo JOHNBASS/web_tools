@@ -124,6 +124,8 @@ const CONSTANTS = {
     normal: 'smells-like-teen-spirit',
     hard: 'uptown-funk'
   },
+  STRIKE_DY: 0.045, // 揮擊偵測：手掌每幀向下位移門檻 (normalized)
+  STRIKE_COOLDOWN: 200, // 兩次敲擊最短間隔 (ms)
   AUDIENCE_GROWTH: 0.1, // 觀眾每秒增加數
   AUDIENCE_DECAY: 0.2, // 觀眾每秒流失數 (無互動)
   OFFLINE_EARN_RATE: 0.5 // 離線收益倍率
@@ -210,6 +212,9 @@ function setDetectionStatus(state, text) {
 let hands;
 let cameraStream;
 let camera;
+
+// 揮擊偵測狀態 (動作式手勢)
+const strikeState = { lastY: null, armed: false, lastHitTime: 0 };
 
 // ============================================
 // 初始化
@@ -538,6 +543,7 @@ async function startGame() {
 
   // 重置遊戲狀態
   resetGameState();
+  resetStrikeState();
 
   // 啟動攝像頭 (如果啟用)。MediaPipe 來自 CDN，若無法載入則自動降級為觸控/鍵盤
   let cameraOK = gameState.cameraEnabled ? await startCamera() : false;
@@ -758,20 +764,22 @@ async function initMediaPipe() {
     // 繪製手部骨架，讓玩家看到自己的手有沒有被抓到
     drawHandLandmarks(landmarks);
 
-    if (landmarks && landmarks.length) {
-      setDetectionStatus('detected', '✋ 偵測到手部 ✓');
-    } else {
+    if (!landmarks || !landmarks.length) {
+      // 沒偵測到手 → 重置揮擊狀態，避免下次速度誤判
+      resetStrikeState();
       setDetectionStatus('', '🖐 揮動手部來敲鼓');
+      return;
     }
 
-    if (landmarks && gameState.isPlaying && !gameState.isPaused) {
-      const gesture = detectGesture(landmarks);
-      if (gesture) {
-        triggerDrum(gesture, Date.now());
+    setDetectionStatus('detected', '✋ 偵測到手部 ✓');
+
+    if (gameState.isPlaying && !gameState.isPaused) {
+      const drumType = detectStrike(landmarks); // 向下揮擊 → 對應的鼓
+      if (drumType) {
+        triggerDrum(drumType, Date.now());
         gameState.lastInteractionTime = Date.now();
 
-        // 偵測到手勢 → 徽章閃一下並顯示對應的鼓
-        const drumType = GESTURE_MAP[gesture];
+        // 敲擊 → 徽章閃一下並顯示對應的鼓
         const drumIndex = CONSTANTS.DRUM_TYPES.indexOf(drumType);
         const label = drumIndex >= 0
           ? `${CONSTANTS.DRUM_EMOJIS[drumIndex]} ${CONSTANTS.DRUM_NAMES[drumIndex]}!`
@@ -780,7 +788,7 @@ async function initMediaPipe() {
         if (hitFlashTimer) clearTimeout(hitFlashTimer);
         hitFlashTimer = setTimeout(() => {
           setDetectionStatus('detected', '✋ 偵測到手部 ✓');
-        }, 250);
+        }, 200);
       }
     }
   });
@@ -818,43 +826,42 @@ function stopMediaPipe() {
 // ============================================
 // 手勢判定
 // ============================================
-function detectGesture(landmarks) {
-  // 关键点：手腕(0), 拇指(4), 食指(8), 中指(12), 无名指(16), 小指(20)
-  const wrist = landmarks[0];
-  const thumb = landmarks[4];
-  const indexFinger = landmarks[8];
-  const middleFinger = landmarks[12];
-  const palm = landmarks[0];
-  
-  // 计算手掌宽度
-  const palmWidth = distance(landmarks[0], landmarks[5]);
-  
-  // 判定逻辑
-  
-  // 1. 双手上举 (鑼)
-  // 检测手掌是否在手腕上方很高的位置
-  if (palm.y < wrist.y - palmWidth * 0.8) {
-    return 'hands_up';
+// 以「向下揮擊」的動作偵測敲鼓 (比靜態姿勢可靠很多)：
+// 手快速往下移動 = 一次敲擊；用手的水平位置決定敲哪一個鼓。
+// 回傳鼓的種類字串 ('bass'|'snare'|'hi-hat'|'crash') 或 null。
+function detectStrike(landmarks) {
+  const hand = landmarks[9] || landmarks[0]; // 用手掌中心 (中指根部) 較穩定
+  const now = Date.now();
+  let drumType = null;
+
+  if (strikeState.lastY !== null) {
+    const dy = hand.y - strikeState.lastY;          // 正值 = 往下 (畫面座標 y 向下為正)
+    const movingDown = dy > CONSTANTS.STRIKE_DY;     // 下移速度超過門檻
+    const cooledDown = now - strikeState.lastHitTime > CONSTANTS.STRIKE_COOLDOWN;
+
+    if (movingDown && cooledDown && !strikeState.armed) {
+      // 畫面是鏡像的 (scaleX(-1))，螢幕上的 x = 1 - 原始 x
+      const screenX = 1 - hand.x;
+      const zone = screenX < 0.25 ? 0 : screenX < 0.5 ? 1 : screenX < 0.75 ? 2 : 3;
+      drumType = CONSTANTS.DRUM_TYPES[zone]; // 0:大鼓 1:軍鼓 2:鈔鑼 3:鑼
+      strikeState.lastHitTime = now;
+      strikeState.armed = true; // 觸發後鎖住，等手抬回去才能再次觸發
+    }
+
+    // 手往上抬 → 解除鎖定，允許下一次敲擊
+    if (dy < -CONSTANTS.STRIKE_DY * 0.5) {
+      strikeState.armed = false;
+    }
   }
-  
-  // 2. 单手向下揮 (軍鼓)
-  // 检测食指是否在手腕下方且快速向下移动
-  if (indexFinger.y > wrist.y + palmWidth * 0.5) {
-    return 'swipe_down';
-  }
-  
-  // 3. 快速左右揮手 (鈔鑼)
-  // 检测手指是否在手掌两侧
-  if (indexFinger.x < palm.x - palmWidth * 0.4 ||
-      indexFinger.x > palm.x + palmWidth * 0.4) {
-    return indexFinger.x < palm.x ? 'swipe_left' : 'swipe_right';
-  }
-  
-  // 4. 双手敲击 (大鼓) - 需要检测双手
-  // 由于我们只检测一只手，这个需要特殊处理
-  // 可以通过检测手是否快速向下然后向上来判定
-  
-  return null;
+
+  strikeState.lastY = hand.y;
+  return drumType;
+}
+
+function resetStrikeState() {
+  strikeState.lastY = null;
+  strikeState.armed = false;
+  strikeState.lastHitTime = 0;
 }
 
 function distance(p1, p2) {
