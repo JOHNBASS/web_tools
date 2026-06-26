@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>節奏打鼓 - Air Drum Master</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- MediaPipe Hands -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.4.165/camera_utils.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.165/hands.js"></script>
+</head>
+<body>
+  <!-- 遊戲選單 -->
+  <div class="menu-container" id="menuContainer">
+    <div class="menu-content">
+      <h1>🥁 节奏打鼓</h1>
+      <p class="subtitle">揮手擊鼓，節奏賺錢！</p>
+      
+      <div class="menu-buttons">
+        <button id="startGameBtn" class="menu-btn primary">🎮 開始遊戲</button>
+        <button id="howToPlayBtn" class="menu-btn secondary">❓ 如何遊戲</button>
+        <button id="settingsBtn" class="menu-btn secondary">⚙️ 設定</button>
+      </div>
+      
+      <div class="game-info">
+        <p>使用 <strong>攝像頭</strong> 或 <strong>觸控</strong> 來敲鼓</p>
+        <p>跟隨節奏獲得高分，解鎖更多歌曲！</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 遊戲畫面 -->
+  <div class="game-container" id="gameContainer" style="display: none;">
+    <!-- 遊戲頭部 (分數、金幣、觀眾) -->
+    <div class="game-header">
+      <div class="stat-item">
+        <span class="label">分數</span>
+        <span class="value" id="score">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">金幣</span>
+        <span class="value" id="coins">$0</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">觀眾</span>
+        <span class="value" id="audience">100</span>
+      </div>
+      <div class="stat-item">
+        <span class="label">Combo</span>
+        <span class="value" id="combo">0</span>
+      </div>
+    </div>
+
+    <!-- 遊戲主體 -->
+    <div class="game-main">
+      <!-- 攝像頭容器 -->
+      <div class="camera-container">
+        <video id="camera-view" autoplay playsinline muted></video>
+        <div class="camera-overlay">
+          <p>請揮手敲鼓！</p>
+          <p id="gesture-hint">↑ 單手揮動 = 軍鼓 🪘</p>
+        </div>
+      </div>
+
+      <!-- 鼓譜區域 -->
+      <div class="drum-chart">
+        <div class="drum-lane" id="lane-0"></div>
+        <div class="drum-lane" id="lane-1"></div>
+        <div class="drum-lane" id="lane-2"></div>
+        <div class="drum-lane" id="lane-3"></div>
+        <div class="judgment-line"></div>
+      </div>
+    </div>
+
+    <!-- 判定顯示 -->
+    <div class="judgment-display" id="judgment">準備好！</div>
+
+    <!-- 控制按鈕 -->
+    <div class="controls">
+      <button id="pause-btn" class="control-btn" disabled>⏸️ 暫停</button>
+      <button id="restart-btn" class="control-btn">🔄 重新開始</button>
+      <button id="back-btn" class="control-btn">🏠 返回選單</button>
+    </div>
+
+    <!-- 觸控控制 (手機專用) -->
+    <div class="touch-controls" id="touchControls">
+      <div class="touch-control bass" data-drum="bass">🥁<br><small>大鼓</small></div>
+      <div class="touch-control snare" data-drum="snare">🪘<br><small>軍鼓</small></div>
+      <div class="touch-control hi-hat" data-drum="hi-hat">📛<br><small>鈔鑼</small></div>
+      <div class="touch-control crash" data-drum="crash">🎔<br><small>鑼</small></div>
+    </div>
+  </div>
+
+  <!-- 如何遊戲說明 -->
+  <div class="how-to-play-container" id="howToPlayContainer" style="display: none;">
+    <div class="how-to-play-content">
+      <h2>❓ 如何遊戲</h2>
+      
+      <div class="instructions">
+        <div class="instruction-item">
+          <h3>🎯 基礎玩法</h3>
+          <p>跟隨螢幕上的鼓譜，在正確的時機敲擊對應的鼓</p>
+        </div>
+        
+        <div class="instruction-item">
+          <h3>👋 手勢控制 (攝像頭)</h3>
+          <ul>
+            <li><strong>單手向下揮</strong> → 軍鼓 🪘 (Snare)</li>
+            <li><strong>雙手同時敲擊</strong> → 大鼓 🥁 (Bass Drum)</li>
+            <li><strong>快速左右揮手</strong> → 鈔鑼 📛 (Hi-Hat)</li>
+            <li><strong>雙手上舉</strong> → 鑼 🎔 (Crash Cymbal)</li>
+          </ul>
+        </div>
+        
+        <div class="instruction-item">
+          <h3>📱 觸控控制 (手機)</h3>
+          <p>如果沒有攝像頭，可以使用屏幕底部的觸控按鈕</p>
+          <p>每個按鈕對應一種鼓</p>
+        </div>
+        
+        <div class="instruction-item">
+          <h3>🎵 判定系統</h3>
+          <ul>
+            <li><span style="color: #00ff00;">✅ Perfect</span> (+300 分 + Combo)</li>
+            <li><span style="color: #ffff00;">⚡ Good</span> (+150 分 + 0.5 Combo)</li>
+            <li><span style="color: #ff8800;">⚠️ Bad</span> (+50 分，Combo 歸零)</li>
+            <li><span style="color: #ff0000;">❌ Miss</span> (0 分，Combo 歸零)</li>
+          </ul>
+          <p><strong>Combo 越高，分數越高！</strong></p>
+        </div>
+        
+        <div class="instruction-item">
+          <h3>💰 放置機制</h3>
+          <p>即使你不敲鼓，遊戲也會自動賺錢</p>
+          <p>觀眾越多，收益越高！</p>
+        </div>
+      </div>
+      
+      <button id="backFromInstructions" class="menu-btn secondary">← 返回</button>
+    </div>
+  </div>
+
+  <!-- 設定畫面 -->
+  <div class="settings-container" id="settingsContainer" style="display: none;">
+    <div class="settings-content">
+      <h2>⚙️ 設定</h2>
+      
+      <div class="settings-options">
+        <div class="setting-item">
+          <label for="difficulty">遊戲難度</label>
+          <select id="difficulty">
+            <option value="easy">🟢 簡單</option>
+            <option value="normal" selected>🟡 普通</option>
+            <option value="hard">🔴 困難</option>
+          </select>
+        </div>
+        
+        <div class="setting-item">
+          <label for="volume">音量</label>
+          <input type="range" id="volume" min="0" max="100" value="80">
+          <span id="volume-value">80%</span>
+        </div>
+        
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="camera-enabled" checked> 使用攝像頭
+          </label>
+          <p class="setting-hint">如果關閉，將使用觸控控制</p>
+        </div>
+        
+        <div class="setting-item">
+          <label>
+            <input type="checkbox" id="vibration-enabled"> 手機振動反饋
+          </label>
+          <p class="setting-hint">在判定為 Perfect 时振动</p>
+        </div>
+      </div>
+      
+      <button id="saveSettings" class="menu-btn primary">儲存設定</button>
+      <button id="backFromSettings" class="menu-btn secondary">← 返回</button>
+    </div>
+  </div>
+
+  <!-- 載入音效 -->
+  <audio id="sound-bass" src="assets/sounds/bass.mp3" preload="auto"></audio>
+  <audio id="sound-snare" src="assets/sounds/snare.mp3" preload="auto"></audio>
+  <audio id="sound-hi-hat" src="assets/sounds/hi-hat.mp3" preload="auto"></audio>
+  <audio id="sound-crash" src="assets/sounds/crash.mp3" preload="auto"></audio>
+
+  <script src="main.js" type="module"></script>
+</body>
+</html>

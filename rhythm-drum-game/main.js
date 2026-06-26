@@ -1,0 +1,1026 @@
+/**
+ * 节奏打鼓 - Air Drum Master
+ * 主邏輯文件
+ * 使用 MediaPipe Hands + Web Audio API
+ */
+
+// ============================================
+// 遊戲狀態
+// ============================================
+const gameState = {
+  // 遊戲基本狀態
+  score: 0,
+  coins: 0,
+  audience: 100,
+  combo: 0,
+  maxCombo: 0,
+  isPlaying: false,
+  isPaused: false,
+  
+  // 遊戲配置
+  difficulty: 'normal',
+  volume: 80,
+  cameraEnabled: true,
+  vibrationEnabled: false,
+  
+  // 遊戲資料
+  currentChart: null,
+  currentTime: 0,
+  startTime: 0,
+  lastUpdateTime: 0,
+  lastInteractionTime: 0,
+  
+  //放置系統
+  drummers: [{ type: 'street', level: 1, bonus: 1.0, autoEarn: 1 }],
+  audienceLimit: 100,
+  
+  // 音樂相關
+  bpm: 120,
+  beatInterval: 500, // 以毫秒為單位
+  
+  //鼓譜相關
+  notes: [],
+  nextNoteIndex: 0,
+  noteSpeed: 3
+};
+
+// ============================================
+// DOM 元素
+// ============================================
+const elements = {
+  // 容器
+  menuContainer: document.getElementById('menuContainer'),
+  gameContainer: document.getElementById('gameContainer'),
+  howToPlayContainer: document.getElementById('howToPlayContainer'),
+  settingsContainer: document.getElementById('settingsContainer'),
+  
+  // 遊戲 UI
+  score: document.getElementById('score'),
+  coins: document.getElementById('coins'),
+  audience: document.getElementById('audience'),
+  combo: document.getElementById('combo'),
+  judgment: document.getElementById('judgment'),
+  gestureHint: document.getElementById('gesture-hint'),
+  cameraView: document.getElementById('camera-view'),
+  
+  // 按鈕
+  startGameBtn: document.getElementById('startGameBtn'),
+  howToPlayBtn: document.getElementById('howToPlayBtn'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  pauseBtn: document.getElementById('pause-btn'),
+  restartBtn: document.getElementById('restart-btn'),
+  backBtn: document.getElementById('back-btn'),
+  backFromInstructions: document.getElementById('backFromInstructions'),
+  saveSettings: document.getElementById('saveSettings'),
+  backFromSettings: document.getElementById('backFromSettings'),
+  
+  // 觸控控制
+  touchControls: document.getElementById('touchControls'),
+  
+  // 鼓譜
+  lanes: [
+    document.getElementById('lane-0'),
+    document.getElementById('lane-1'),
+    document.getElementById('lane-2'),
+    document.getElementById('lane-3')
+  ],
+  
+  // 音效
+  sounds: {
+    bass: document.getElementById('sound-bass'),
+    snare: document.getElementById('sound-snare'),
+    hiHat: document.getElementById('sound-hi-hat'),
+    crash: document.getElementById('sound-crash')
+  },
+  
+  // 設定
+  difficultySelect: document.getElementById('difficulty'),
+  volumeSlider: document.getElementById('volume'),
+  volumeValue: document.getElementById('volume-value'),
+  cameraEnabledCheckbox: document.getElementById('camera-enabled'),
+  vibrationEnabledCheckbox: document.getElementById('vibration-enabled')
+};
+
+// ============================================
+// 遊戲常數
+// ============================================
+const CONSTANTS = {
+  DRUM_TYPES: ['bass', 'snare', 'hi-hat', 'crash'],
+  DRUM_COLORS: ['#ff4444', '#4444ff', '#ffff44', '#ff44ff'],
+  DRUM_EMOJIS: ['🥁', '🪘', '📛', '🎔'],
+  DRUM_NAMES: ['大鼓', '軍鼓', '鈔鑼', '鑼'],
+  JUDGE_WINDOWS: {
+    easy: { perfect: 70, good: 140, bad: 210 },
+    normal: { perfect: 50, good: 100, bad: 150 },
+    hard: { perfect: 30, good: 60, bad: 100 }
+  },
+  NOTE_SPEED: 3, // 音符下落速度 (px/ms)
+  AUDIENCE_GROWTH: 0.1, // 觀眾每秒增加數
+  AUDIENCE_DECAY: 0.2, // 觀眾每秒流失數 (無互動)
+  OFFLINE_EARN_RATE: 0.5 // 離線收益倍率
+};
+
+// ============================================
+// 手勢映射
+// ============================================
+const GESTURE_MAP = {
+  'swipe_down': 'snare',     // 单手向下揮 (軍鼓)
+  'clap': 'bass',            // 双手敲击 (大鼓)
+  'swipe_left': 'hi-hat',    // 快速左右揮手 (鈔鑼)
+  'swipe_right': 'hi-hat',   // 快速左右揮手 (鈔鑼)
+  'hands_up': 'crash'        // 双手上举 (鑼)
+};
+
+// ============================================
+// MediaPipe 相關
+// ============================================
+let hands;
+let cameraStream;
+let camera;
+
+// ============================================
+// 初始化
+// ============================================
+async function init() {
+  // 載入存檔
+  loadGame();
+  
+  // 初始化 UI
+  updateSettingsUI();
+  
+  // 初始化事件監聽
+  initEventListeners();
+  
+  // 顯示選單
+  showMenu();
+  
+  console.log('遊戲初始化完成！');
+}
+
+// ============================================
+// 事件監聽
+// ============================================
+function initEventListeners() {
+  // 選單按鈕
+  elements.startGameBtn.addEventListener('click', startGame);
+  elements.howToPlayBtn.addEventListener('click', showHowToPlay);
+  elements.settingsBtn.addEventListener('click', showSettings);
+  
+  // 遊戲按鈕
+  elements.pauseBtn.addEventListener('click', togglePause);
+  elements.restartBtn.addEventListener('click', restartGame);
+  elements.backBtn.addEventListener('click', backToMenu);
+  
+  // 如何遊戲按鈕
+  elements.backFromInstructions.addEventListener('click', showMenu);
+  
+  // 設定按鈕
+  elements.saveSettings.addEventListener('click', saveSettings);
+  elements.backFromSettings.addEventListener('click', showMenu);
+  
+  // 設定變更
+  elements.difficultySelect.addEventListener('change', () => {
+    gameState.difficulty = elements.difficultySelect.value;
+  });
+  
+  elements.volumeSlider.addEventListener('input', () => {
+    gameState.volume = parseInt(elements.volumeSlider.value);
+    elements.volumeValue.textContent = `${gameState.volume}%`;
+    updateVolume();
+  });
+  
+  elements.cameraEnabledCheckbox.addEventListener('change', () => {
+    gameState.cameraEnabled = elements.cameraEnabledCheckbox.checked;
+  });
+  
+  elements.vibrationEnabledCheckbox.addEventListener('change', () => {
+    gameState.vibrationEnabled = elements.vibrationEnabledCheckbox.checked;
+  });
+  
+  // 觸控控制
+  initTouchControls();
+  
+  // 鍵盤控制 (桌面備選)
+  document.addEventListener('keydown', handleKeyDown);
+  
+  // 任何互動都更新最後互動時間
+  document.addEventListener('click', () => {
+    if (gameState.isPlaying) {
+      gameState.lastInteractionTime = Date.now();
+    }
+  });
+}
+
+// ============================================
+// 觸控控制
+// ============================================
+function initTouchControls() {
+  elements.touchControls.addEventListener('click', (e) => {
+    const drumType = e.target.closest('[data-drum]')?.dataset.drum;
+    if (drumType && gameState.isPlaying && !gameState.isPaused) {
+      triggerDrum(drumType, Date.now());
+      gameState.lastInteractionTime = Date.now();
+    }
+  });
+}
+
+// ============================================
+// 鍵盤控制
+// ============================================
+function handleKeyDown(e) {
+  if (!gameState.isPlaying || gameState.isPaused) return;
+  
+  const keyMap = {
+    'a': 'bass',
+    's': 'snare',
+    'd': 'hi-hat',
+    'f': 'crash',
+    ' ': 'bass' // 空格鍵 = 大鼓
+  };
+  
+  const drumType = keyMap[e.key];
+  if (drumType) {
+    triggerDrum(drumType, Date.now());
+    gameState.lastInteractionTime = Date.now();
+  }
+  
+  // ESC 鍵返回選單
+  if (e.key === 'Escape' && gameState.isPlaying) {
+    backToMenu();
+  }
+}
+
+// ============================================
+// UI 顯示控制
+// ============================================
+function showMenu() {
+  elements.menuContainer.style.display = 'flex';
+  elements.gameContainer.style.display = 'none';
+  elements.howToPlayContainer.style.display = 'none';
+  elements.settingsContainer.style.display = 'none';
+  
+  // 停止遊戲
+  if (gameState.isPlaying) {
+    endGame();
+  }
+}
+
+function showHowToPlay() {
+  elements.menuContainer.style.display = 'none';
+  elements.gameContainer.style.display = 'none';
+  elements.howToPlayContainer.style.display = 'flex';
+  elements.settingsContainer.style.display = 'none';
+}
+
+function showSettings() {
+  elements.menuContainer.style.display = 'none';
+  elements.gameContainer.style.display = 'none';
+  elements.howToPlayContainer.style.display = 'none';
+  elements.settingsContainer.style.display = 'flex';
+}
+
+function showGame() {
+  elements.menuContainer.style.display = 'none';
+  elements.gameContainer.style.display = 'flex';
+  elements.howToPlayContainer.style.display = 'none';
+  elements.settingsContainer.style.display = 'none';
+}
+
+// ============================================
+// 更新設定 UI
+// ============================================
+function updateSettingsUI() {
+  elements.difficultySelect.value = gameState.difficulty;
+  elements.volumeSlider.value = gameState.volume;
+  elements.volumeValue.textContent = `${gameState.volume}%`;
+  elements.cameraEnabledCheckbox.checked = gameState.cameraEnabled;
+  elements.vibrationEnabledCheckbox.checked = gameState.vibrationEnabled;
+  
+  updateVolume();
+}
+
+// ============================================
+// 更新音量
+// ============================================
+function updateVolume() {
+  Object.values(elements.sounds).forEach(sound => {
+    if (sound) {
+      sound.volume = gameState.volume / 100;
+    }
+  });
+}
+
+// ============================================
+// 存檔系統
+// ============================================
+function saveGame() {
+  const saveData = {
+    coins: gameState.coins,
+    maxCombo: gameState.maxCombo,
+    audienceLimit: gameState.audienceLimit,
+    drummers: gameState.drummers,
+    difficulty: gameState.difficulty,
+    volume: gameState.volume,
+    cameraEnabled: gameState.cameraEnabled,
+    vibrationEnabled: gameState.vibrationEnabled,
+    version: 1.0
+  };
+  
+  localStorage.setItem('rhythmDrumGame_Save', JSON.stringify(saveData));
+  console.log('遊戲進度已儲存');
+}
+
+function loadGame() {
+  const saveData = localStorage.getItem('rhythmDrumGame_Save');
+  if (!saveData) return;
+  
+  try {
+    const data = JSON.parse(saveData);
+    
+    // 版本兼容性
+    if (data.version !== 1.0) {
+      console.log('存檔版本不匹配，使用預設值');
+      return;
+    }
+    
+    // 載入遊戲狀態
+    gameState.coins = data.coins || 0;
+    gameState.maxCombo = data.maxCombo || 0;
+    gameState.audienceLimit = data.audienceLimit || 100;
+    gameState.drummers = data.drummers || [{ type: 'street', level: 1, bonus: 1.0, autoEarn: 1 }];
+    gameState.difficulty = data.difficulty || 'normal';
+    gameState.volume = data.volume || 80;
+    gameState.cameraEnabled = data.cameraEnabled !== false; // 預設 true
+    gameState.vibrationEnabled = data.vibrationEnabled || false;
+    
+    console.log('遊戲進度已載入');
+  } catch (err) {
+    console.error('載入存檔失敗:', err);
+  }
+}
+
+// ============================================
+// 保存設定
+// ============================================
+function saveSettings() {
+  // 更新遊戲狀態
+  gameState.difficulty = elements.difficultySelect.value;
+  gameState.volume = parseInt(elements.volumeSlider.value);
+  gameState.cameraEnabled = elements.cameraEnabledCheckbox.checked;
+  gameState.vibrationEnabled = elements.vibrationEnabledCheckbox.checked;
+  
+  // 更新音量
+  updateVolume();
+  
+  // 儲存設定
+  saveGame();
+  
+  // 顯示提示
+  alert('設定已儲存！');
+  showMenu();
+}
+
+// ============================================
+// 鼓譜系統
+// ============================================
+async function loadChart(difficulty = 'easy', name = 'happy-birthday') {
+  try {
+    // 嘗試從本地載入
+    const response = await fetch(`charts/${difficulty}/${name}.json`);
+    gameState.currentChart = await response.json();
+    generateNotes();
+    return true;
+  } catch (err) {
+    console.warn('載入鼓譜失敗，使用預設鼓譜:', err);
+    // 使用預設鼓譜
+    gameState.currentChart = {
+      title: "Happy Birthday",
+      bpm: 120,
+      difficulty: "easy",
+      notes: [
+        { time: 0.5, type: "snare", lane: 1 },
+        { time: 1.0, type: "snare", lane: 1 },
+        { time: 1.5, type: "bass", lane: 0 },
+        { time: 2.0, type: "hi-hat", lane: 2 },
+        { time: 2.5, type: "snare", lane: 1 },
+        { time: 3.0, type: "crash", lane: 3 },
+        { time: 3.5, type: "snare", lane: 1 },
+        { time: 4.0, type: "bass", lane: 0 },
+        { time: 4.5, type: "hi-hat", lane: 2 },
+        { time: 5.0, type: "snare", lane: 1 },
+        { time: 5.5, type: "crash", lane: 3 }
+      ]
+    };
+    generateNotes();
+    return false;
+  }
+}
+
+function generateNotes() {
+  gameState.notes = [];
+  gameState.nextNoteIndex = 0;
+  
+  // 清空舊音符
+  document.querySelectorAll('.note').forEach(note => note.remove());
+  
+  // 根據 BPM 計算 beatInterval
+  gameState.bpm = gameState.currentChart.bpm || 120;
+  gameState.beatInterval = 60000 / gameState.bpm;
+  
+  // 創建新音符
+  gameState.currentChart.notes.forEach((note, index) => {
+    gameState.notes.push({
+      ...note,
+      id: `note-${index}`,
+      x: 0,
+      y: -50
+    });
+  });
+  
+  // 更新提示
+  updateGestureHint();
+}
+
+function createNoteElement(note) {
+  const lane = elements.lanes[note.lane];
+  if (!lane) return;
+  
+  const noteElement = document.createElement('div');
+  noteElement.className = `note ${note.type}`;
+  noteElement.dataset.id = note.id;
+  noteElement.style.transform = `translateY(${note.y}px)`;
+  lane.appendChild(noteElement);
+}
+
+function updateGestureHint() {
+  if (!gameState.currentChart || !gameState.currentChart.notes || 
+      gameState.nextNoteIndex >= gameState.currentChart.notes.length) {
+    elements.gestureHint.textContent = '遊戲結束！';
+    return;
+  }
+  
+  const nextNote = gameState.currentChart.notes[gameState.nextNoteIndex];
+  const drumIndex = CONSTANTS.DRUM_TYPES.indexOf(nextNote.type);
+  elements.gestureHint.textContent = 
+    `↑ ${CONSTANTS.DRUM_EMOJIS[drumIndex]} = ${CONSTANTS.DRUM_NAMES[drumIndex]}`;
+}
+
+// ============================================
+// 遊戲控制
+// ============================================
+async function startGame() {
+  if (gameState.isPlaying) return;
+  
+  // 載入鼓譜
+  await loadChart(gameState.difficulty, 'happy-birthday');
+  
+  // 重置遊戲狀態
+  resetGameState();
+  
+  // 啟動攝像頭 (如果啟用)
+  const cameraOK = gameState.cameraEnabled ? await startCamera() : false;
+  
+  if (cameraOK) {
+    await initMediaPipe();
+    startMediaPipeCamera();
+  } else {
+    // 如果攝像頭失敗，顯示觸控控制
+    elements.touchControls.style.display = 'flex';
+  }
+  
+  // 顯示遊戲畫面
+  showGame();
+  
+  // 更新按鈕狀態
+  elements.pauseBtn.disabled = false;
+  elements.pauseBtn.textContent = '⏸️ 暫停';
+  elements.startGameBtn.disabled = true;
+  
+  // 開始遊戲循環
+  gameState.isPlaying = true;
+  gameState.isPaused = false;
+  gameState.startTime = Date.now();
+  gameState.lastUpdateTime = Date.now();
+  gameState.lastInteractionTime = Date.now();
+  
+  // 顯示遊戲開始
+  elements.judgment.textContent = '開始！';
+  elements.judgment.className = 'judgment-display';
+  
+  // 生成音符
+  generateNotes();
+  
+  // 開始遊戲循環
+  requestAnimationFrame(gameLoop);
+  
+  console.log('遊戲已開始');
+}
+
+function resetGameState() {
+  gameState.score = 0;
+  gameState.combo = 0;
+  gameState.audience = 100;
+  gameState.currentTime = 0;
+  
+  // 清空音符
+  document.querySelectorAll('.note').forEach(note => note.remove());
+  
+  // 更新 UI
+  updateUI();
+}
+
+function restartGame() {
+  if (!gameState.isPlaying) return;
+  
+  endGame();
+  setTimeout(startGame, 100);
+}
+
+function togglePause() {
+  if (!gameState.isPlaying) return;
+  
+  if (gameState.isPaused) {
+    resumeGame();
+  } else {
+    pauseGame();
+  }
+}
+
+function pauseGame() {
+  if (!gameState.isPlaying || gameState.isPaused) return;
+  
+  gameState.isPaused = true;
+  elements.pauseBtn.textContent = '▶️ 繼續';
+  
+  // 停止 MediaPipe
+  stopMediaPipe();
+  
+  // 顯示暫停狀態
+  elements.judgment.textContent = '⏸️ 已暫停';
+  elements.judgment.className = 'judgment-display';
+  
+  console.log('遊戲已暫停');
+}
+
+function resumeGame() {
+  if (!gameState.isPlaying || !gameState.isPaused) return;
+  
+  gameState.isPaused = false;
+  gameState.lastUpdateTime = Date.now();
+  gameState.lastInteractionTime = Date.now();
+  elements.pauseBtn.textContent = '⏸️ 暫停';
+  
+  // 重新啟動 MediaPipe
+  if (gameState.cameraEnabled && cameraStream) {
+    startMediaPipeCamera();
+  }
+  
+  // 顯示繼續狀態
+  elements.judgment.textContent = '▶️ 繼續遊戲';
+  elements.judgment.className = 'judgment-display';
+  setTimeout(() => {
+    elements.judgment.textContent = '';
+  }, 1000);
+  
+  // 繼續遊戲循環
+  requestAnimationFrame(gameLoop);
+  
+  console.log('遊戲已繼續');
+}
+
+function backToMenu() {
+  if (gameState.isPlaying) {
+    endGame();
+  }
+  showMenu();
+  
+  // 儲存遊戲進度
+  saveGame();
+}
+
+function endGame() {
+  gameState.isPlaying = false;
+  gameState.isPaused = false;
+  
+  // 停止攝像頭
+  stopCamera();
+  
+  // 停止 MediaPipe
+  stopMediaPipe();
+  
+  // 清空音符
+  document.querySelectorAll('.note').forEach(note => note.remove());
+  
+  // 重置 UI
+  elements.pauseBtn.disabled = true;
+  elements.pauseBtn.textContent = '⏸️ 暫停';
+  elements.startGameBtn.disabled = false;
+  elements.judgment.textContent = '遊戲結束！';
+  elements.judgment.className = 'judgment-display';
+  
+  // 隱藏觸控控制
+  elements.touchControls.style.display = 'none';
+  
+  console.log('遊戲已結束');
+}
+
+// ============================================
+// 攝像頭控制
+// ============================================
+async function startCamera() {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: 'user',
+        width: { ideal: 640 },
+        height: { ideal: 480 },
+        frameRate: { ideal: 15 }
+      }
+    });
+    
+    elements.cameraView.srcObject = cameraStream;
+    return true;
+  } catch (err) {
+    console.error('攝像頭權限被拒絕:', err);
+    // 顯示觸控控制
+    elements.touchControls.style.display = 'flex';
+    elements.cameraEnabled = false;
+    return false;
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+    elements.cameraView.srcObject = null;
+  }
+}
+
+// ============================================
+// MediaPipe 初始化
+// ============================================
+async function initMediaPipe() {
+  hands = new Hands({
+    locateFile: (file) => {
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.165/${file}`;
+    },
+    maxNumHands: 1,
+    modelComplexity: 0,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+  
+  hands.onResults((results) => {
+    if (results.multiHandLandmarks && gameState.isPlaying && !gameState.isPaused) {
+      const landmarks = results.multiHandLandmarks[0];
+      const gesture = detectGesture(landmarks);
+      if (gesture) {
+        triggerDrum(gesture, Date.now());
+        gameState.lastInteractionTime = Date.now();
+      }
+    }
+  });
+}
+
+function startMediaPipeCamera() {
+  if (!hands || !cameraStream) return;
+  
+  camera = new Camera(elements.cameraView, {
+    onFrame: async () => {
+      await hands.send({ image: elements.cameraView });
+    },
+    width: 640,
+    height: 480
+  });
+  
+  camera.start();
+}
+
+function stopMediaPipe() {
+  if (camera) {
+    camera.stop();
+    camera = null;
+  }
+  
+  if (hands) {
+    hands.close();
+    hands = null;
+  }
+}
+
+// ============================================
+// 手勢判定
+// ============================================
+function detectGesture(landmarks) {
+  // 关键点：手腕(0), 拇指(4), 食指(8), 中指(12), 无名指(16), 小指(20)
+  const wrist = landmarks[0];
+  const thumb = landmarks[4];
+  const indexFinger = landmarks[8];
+  const middleFinger = landmarks[12];
+  const palm = landmarks[0];
+  
+  // 计算手掌宽度
+  const palmWidth = distance(landmarks[0], landmarks[5]);
+  
+  // 判定逻辑
+  
+  // 1. 双手上举 (鑼)
+  // 检测手掌是否在手腕上方很高的位置
+  if (palm.y < wrist.y - palmWidth * 0.8) {
+    return 'hands_up';
+  }
+  
+  // 2. 单手向下揮 (軍鼓)
+  // 检测食指是否在手腕下方且快速向下移动
+  if (indexFinger.y > wrist.y + palmWidth * 0.5) {
+    return 'swipe_down';
+  }
+  
+  // 3. 快速左右揮手 (鈔鑼)
+  // 检测手指是否在手掌两侧
+  if (indexFinger.x < palm.x - palmWidth * 0.4 ||
+      indexFinger.x > palm.x + palmWidth * 0.4) {
+    return indexFinger.x < palm.x ? 'swipe_left' : 'swipe_right';
+  }
+  
+  // 4. 双手敲击 (大鼓) - 需要检测双手
+  // 由于我们只检测一只手，这个需要特殊处理
+  // 可以通过检测手是否快速向下然后向上来判定
+  
+  return null;
+}
+
+function distance(p1, p2) {
+  return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+}
+
+// ============================================
+// 觸發敲鼓
+// ============================================
+function triggerDrum(drumType, timestamp) {
+  if (!gameState.isPlaying || gameState.isPaused) return;
+  
+  // 计算判定
+  const now = timestamp - gameState.startTime;
+  const judgment = judgeDrum(drumType, now);
+  
+  // 播放音效
+  playSound(drumType);
+  
+  // 振動反饋 (如果啟用)
+  if (gameState.vibrationEnabled && 'vibrate' in navigator) {
+    if (judgment.result === 'Perfect') {
+      navigator.vibrate(30);
+    } else if (judgment.result === 'Good') {
+      navigator.vibrate(20);
+    }
+  }
+  
+  // 显示判定
+  showJudgment(judgment.result);
+  
+  // 更新分数
+  gameState.score += judgment.score;
+  gameState.combo = judgment.combo;
+  gameState.maxCombo = Math.max(gameState.maxCombo, gameState.combo);
+  
+  // 更新觀眾
+  if (judgment.result === 'Perfect' || judgment.result === 'Good') {
+    gameState.audience = Math.min(gameState.audience + 5, gameState.audienceLimit);
+  } else if (judgment.result === 'Miss') {
+    gameState.audience = Math.max(gameState.audience - 2, 0);
+  }
+  
+  // 更新音符索引
+  const currentTime = (timestamp - gameState.startTime) / 1000;
+  while (gameState.nextNoteIndex < gameState.notes.length && 
+         gameState.notes[gameState.nextNoteIndex].time <= currentTime) {
+    gameState.nextNoteIndex++;
+  }
+  
+  // 更新提示
+  updateGestureHint();
+  
+  // 更新 UI
+  updateUI();
+  
+  // 检查是否所有音符都处理完了
+  if (gameState.nextNoteIndex >= gameState.notes.length) {
+    setTimeout(() => {
+      if (gameState.nextNoteIndex >= gameState.notes.length) {
+        elements.judgment.textContent = '太棒了！歌曲完成';
+        elements.judgment.className = 'judgment-display';
+        
+        // 更新金幣 (放置收益)
+        const songDuration = gameState.currentChart.notes.length * 0.5; // 假設每個音符 0.5 秒
+        gameState.coins += Math.floor(gameState.score * 0.1); // 10% 分數轉金幣
+        
+        // 解鎖新鼓譜
+        unlockNewCharts();
+      }
+    }, 1000);
+  }
+}
+
+// ============================================
+// 判定系統
+// ============================================
+function judgeDrum(drumType, now) {
+  // 找到当前时间附近的音符
+  const timeWindow = 200; // ±200ms
+  const currentNotes = gameState.notes.filter(note => {
+    return Math.abs(note.time * 1000 - now) < timeWindow && note.type === drumType;
+  });
+  
+  if (currentNotes.length === 0) {
+    // 没有对应的音符
+    resetCombo();
+    return { result: 'Miss', score: 0, combo: 0 };
+  }
+  
+  // 找到最接近的音符
+  const closestNote = currentNotes.reduce((prev, curr) => {
+    return Math.abs(curr.time * 1000 - now) < Math.abs(prev.time * 1000 - now) ? curr : prev;
+  });
+  
+  const diff = Math.abs(closestNote.time * 1000 - now);
+  const windows = CONSTANTS.JUDGE_WINDOWS[gameState.difficulty];
+  
+  let result, scoreMultiplier;
+  if (diff <= windows.perfect) {
+    result = 'Perfect';
+    scoreMultiplier = 3.0;
+    gameState.combo++;
+  } else if (diff <= windows.good) {
+    result = 'Good';
+    scoreMultiplier = 1.5;
+    gameState.combo += 0.5;
+  } else if (diff <= windows.bad) {
+    result = 'Bad';
+    scoreMultiplier = 0.5;
+    resetCombo();
+  } else {
+    result = 'Miss';
+    scoreMultiplier = 0;
+    resetCombo();
+  }
+  
+  const baseScore = 100;
+  const comboBonus = 1 + (gameState.combo * 0.01); // 每 1 combo +1%
+  const finalScore = baseScore * scoreMultiplier * comboBonus;
+  
+  return { result, score: Math.floor(finalScore), combo: gameState.combo };
+}
+
+function resetCombo() {
+  gameState.combo = 0;
+}
+
+function showJudgment(result) {
+  elements.judgment.textContent = result;
+  elements.judgment.className = `judgment-display ${result.toLowerCase()}`;
+  
+  // 1 秒后清空
+  setTimeout(() => {
+    if (elements.judgment.textContent === result) {
+      elements.judgment.textContent = '';
+      elements.judgment.className = 'judgment-display';
+    }
+  }, 1000);
+}
+
+// ============================================
+// 音效播放
+// ============================================
+function playSound(drumType) {
+  const sound = elements.sounds[drumType];
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play().catch(err => {
+      console.error('播放音效失敗:', err);
+    });
+  }
+}
+
+// ============================================
+// 遊戲循環
+// ============================================
+function gameLoop(timestamp) {
+  if (!gameState.isPlaying || gameState.isPaused) {
+    return;
+  }
+  
+  // 更新音符位置
+  updateNotes(timestamp);
+  
+  // 更新觀眾數量
+  const now = Date.now();
+  const deltaTime = (now - gameState.lastUpdateTime) / 1000; // 轉換為秒
+  
+  if (deltaTime > 0) {
+    // 觀眾自動增加
+    gameState.audience = Math.min(
+      gameState.audience + CONSTANTS.AUDIENCE_GROWTH * deltaTime,
+      gameState.audienceLimit
+    );
+    
+    // 如果長時間沒互動，觀眾流失
+    if (now - gameState.lastInteractionTime > 30000) { // 30 秒
+      gameState.audience = Math.max(
+        gameState.audience - CONSTANTS.AUDIENCE_DECAY * deltaTime,
+        0
+      );
+    }
+    
+    gameState.lastUpdateTime = now;
+    updateUI();
+  }
+  
+  // 繼續循環
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================
+// 更新音符位置
+// ============================================
+function updateNotes(timestamp) {
+  const now = timestamp - gameState.startTime;
+  const laneHeight = elements.drumChart.offsetHeight;
+  const noteHeight = 18;
+  
+  for (let i = 0; i < gameState.notes.length; i++) {
+    const note = gameState.notes[i];
+    
+    // 计算音符应该出现的时间 (毫秒)
+    const noteTime = note.time * 1000;
+    
+    // 如果音符还没到出现时间，跳过
+    if (noteTime > now) continue;
+    
+    // 计算音符的 y 位置
+    const progress = (now - noteTime) / 1000; // 秒
+    note.y = progress * CONSTANTS.NOTE_SPEED * 10;
+    
+    // 如果音符已经超出屏幕，移除
+    if (note.y > laneHeight + noteHeight) {
+      const noteElement = document.querySelector(`.note[data-id="${note.id}"]`);
+      if (noteElement) {
+        noteElement.remove();
+      }
+      continue;
+    }
+    
+    // 更新音符位置
+    let noteElement = document.querySelector(`.note[data-id="${note.id}"]`);
+    if (!noteElement) {
+      noteElement = createNoteElement(note);
+    }
+    
+    if (noteElement) {
+      noteElement.style.transform = `translateY(${note.y}px)`;
+    }
+  }
+}
+
+// ============================================
+// 創建音符元素
+// ============================================
+function createNoteElement(note) {
+  const lane = elements.lanes[note.lane];
+  if (!lane) return null;
+  
+  const noteElement = document.createElement('div');
+  noteElement.className = `note ${note.type}`;
+  noteElement.dataset.id = note.id;
+  noteElement.style.transform = `translateY(${note.y}px)`;
+  lane.appendChild(noteElement);
+  
+  return noteElement;
+}
+
+// ============================================
+// 更新 UI
+// ============================================
+function updateUI() {
+  elements.score.textContent = Math.floor(gameState.score);
+  elements.coins.textContent = `$${Math.floor(gameState.coins)}`;
+  elements.audience.textContent = Math.floor(gameState.audience);
+  elements.combo.textContent = gameState.combo;
+}
+
+// ============================================
+// 解鎖新鼓譜
+// ============================================
+function unlockNewCharts() {
+  // 根据分数解锁新鼓譜
+  if (gameState.score >= 5000 && !localStorage.getItem('unlocked_jingle-bells')) {
+    localStorage.setItem('unlocked_jingle-bells', 'true');
+    console.log('解鎖了新鼓譜: Jingle Bells');
+  }
+}
+
+// ============================================
+// 页面加载完成后初始化
+// ============================================
+document.addEventListener('DOMContentLoaded', init);
