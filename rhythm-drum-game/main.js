@@ -801,10 +801,11 @@ async function initMediaPipe() {
   }
   
   // 降低信心度門檻，提高偵測靈敏度
-  // 使用本地檔案，避開 CDN 問題
+  // 使用本地完整套件，避開 CDN 問題
   hands = new Hands({
     locateFile: (file) => {
-      // 使用本地的 MediaPipe 檔案
+      // 使用本地的 MediaPipe 完整套件檔案
+      // 這些檔案來自 @mediapipe/hands npm 套件
       return `js/mediapipe/${file}`;
     },
     maxNumHands: 2,           // 支援兩隻手
