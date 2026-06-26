@@ -801,11 +801,11 @@ async function initMediaPipe() {
   }
   
   // 降低信心度門檻，提高偵測靈敏度
-  // 使用 latest 版本，自動獲取最新穩定版
+  // 使用本地檔案，避開 CDN 問題
   hands = new Hands({
     locateFile: (file) => {
-      // 使用 latest 版本，避開特定版本的問題
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@latest/${file}`;
+      // 使用本地的 MediaPipe 檔案
+      return `js/mediapipe/${file}`;
     },
     maxNumHands: 2,           // 支援兩隻手
     modelComplexity: 0,        // 輕量模型
