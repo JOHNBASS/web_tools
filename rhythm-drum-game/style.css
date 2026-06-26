@@ -412,20 +412,16 @@ body {
   opacity: 0.7;
 }
 
-/* 触控控制 (手机专用) */
+/* 触控控制 (无攝像頭/手勢時顯示) — 置於正常流程，避免覆蓋控制按鈕 */
 .touch-controls {
-  display: none;
-  position: fixed;
-  bottom: 20px;
-  left: 0;
-  right: 0;
-  height: 80px;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
+  display: none; /* 由 JS 在需要時設為 flex；手機版用 media query 強制顯示 */
+  flex-shrink: 0;
+  height: 96px;
+  background: var(--bg-darker);
+  border-top: 2px solid var(--accent);
   justify-content: space-around;
   align-items: center;
-  z-index: 100;
-  padding: 0 20px;
+  padding: 8px 20px;
   box-sizing: border-box;
 }
 
