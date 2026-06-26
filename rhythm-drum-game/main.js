@@ -801,11 +801,11 @@ async function initMediaPipe() {
   }
   
   // 降低信心度門檻，提高偵測靈敏度
-  // 使用穩定可用的版本 (0.4.1634469242 經驗證可行)
+  // 使用 latest 版本，自動獲取最新穩定版
   hands = new Hands({
     locateFile: (file) => {
-      // 使用可用的版本，避開有問題的 0.4.1675469240
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1634469242/${file}`;
+      // 使用 latest 版本，避開特定版本的問題
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@latest/${file}`;
     },
     maxNumHands: 2,           // 支援兩隻手
     modelComplexity: 0,        // 輕量模型
