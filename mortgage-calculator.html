@@ -16,6 +16,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 :root {
   --primary: #2563eb;
@@ -47,7 +48,7 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding: 2rem 1.5rem;
 }
@@ -61,7 +62,7 @@ body {
 }
 
 .header-content {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   display: flex;
   align-items: center;
@@ -168,7 +169,7 @@ body {
 }
 
 /* Tablet Layout */
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .input-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -203,6 +204,64 @@ body {
 
 .calc-btn:active {
   transform: translateY(0);
+}
+
+/* Chart Section */
+.chart-section {
+  margin-top: 2rem;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.chart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.chart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: var(--text);
+  font-size: 1.125rem;
+}
+
+.chart-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chart-tab {
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chart-tab.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.chart-tab:hover:not(.active) {
+  background: var(--border);
+}
+
+.chart-container {
+  position: relative;
+  height: 400px;
 }
 
 /* Result Section */
@@ -327,7 +386,7 @@ body {
 }
 
 /* Responsive Design */
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .container {
     padding: 1.5rem 1rem;
   }
@@ -359,6 +418,10 @@ body {
     padding: 0.75rem 1rem;
   }
   
+  .chart-container {
+    height: 300px;
+  }
+  
   .result-item {
     flex-direction: column;
     align-items: flex-start;
@@ -377,6 +440,11 @@ body {
   .result-grid {
     grid-template-columns: 1fr;
   }
+  
+  .chart-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 480px) {
@@ -392,6 +460,15 @@ body {
     padding: 0.875rem 1.5rem;
     font-size: 1rem;
   }
+  
+  .chart-tabs {
+    width: 100%;
+    overflow-x: auto;
+  }
+  
+  .chart-container {
+    height: 250px;
+  }
 }
 
 /* Animations */
@@ -401,14 +478,16 @@ body {
 }
 
 .calculator-card,
+.chart-section,
 .result-section,
 .info-section {
   animation: fadeIn 0.5s ease forwards;
 }
 
 .calculator-card { animation-delay: 0.1s; }
-.result-section { animation-delay: 0.2s; }
-.info-section { animation-delay: 0.3s; }
+.chart-section { animation-delay: 0.2s; }
+.result-section { animation-delay: 0.3s; }
+.info-section { animation-delay: 0.4s; }
 </style>
 </head>
 <body>
@@ -485,6 +564,22 @@ body {
     </button>
   </div>
   
+  <div class="chart-section">
+    <div class="chart-header">
+      <div class="chart-title">
+        📈 視覺化圖表
+      </div>
+      <div class="chart-tabs">
+        <button class="chart-tab active" onclick="switchChart('bar')">月繳比較</button>
+        <button class="chart-tab" onclick="switchChart('cashflow')">現金流分析</button>
+        <button class="chart-tab" onclick="switchChart('pie')">費用分佈</button>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="mortgageChart"></canvas>
+    </div>
+  </div>
+  
   <div class="result-section">
     <div class="result-header">
       📊 計算結果
@@ -517,6 +612,29 @@ body {
 </footer>
 
 <script>
+let mortgageChart = null;
+let currentChartType = 'bar';
+
+// 切換圖表類型
+function switchChart(type) {
+  currentChartType = type;
+  
+  // 更新 tab 狀態
+  document.querySelectorAll('.chart-tab').forEach(tab => {
+    tab.classList.remove('active');
+  });
+  document.querySelector(`.chart-tab:nth-child(${['bar', 'cashflow', 'pie'].indexOf(type) + 1})`).classList.add('active');
+  
+  // 重新計算並繪製圖表
+  calc();
+}
+
+// 格式化金額
+function formatCurrency(value) {
+  return 'NT$' + (value / 10000).toFixed(2) + '萬';
+}
+
+// 計算並更新圖表
 function calc() {
   let P = parseFloat(document.getElementById('loan').value) || 0;
   let annual = (parseFloat(document.getElementById('rate').value) || 0) / 100;
@@ -529,6 +647,10 @@ function calc() {
   let interestOnly = P * annual / 12;
   let payment = P * r / (1 - Math.pow(1 + r, -n));
   
+  // 計算總利息
+  let totalPayment = payment * n;
+  let totalInterest = totalPayment - P;
+  
   // 計算打平貸款金額
   let maxLoan = (rent / payment) * P;
   
@@ -539,6 +661,7 @@ function calc() {
   let graceCashFlowClass = graceCashFlow >= 0 ? 'highlight' : 'danger';
   let amortizingCashFlowClass = amortizingCashFlow >= 0 ? 'highlight' : 'danger';
   
+  // 更新文字結果
   document.getElementById('out').innerHTML = `
     <div class="result-item">
       <span class="result-label">寬限期月繳</span>
@@ -564,10 +687,195 @@ function calc() {
       📝 以目前租金 ${rent.toFixed(0)} 元計算，建議貸款金額上限約 ${maxLoan.toFixed(0)} 元
     </div>
   `;
+  
+  // 銷毀舊圖表
+  if (mortgageChart) {
+    mortgageChart.destroy();
+  }
+  
+  const ctx = document.getElementById('mortgageChart').getContext('2d');
+  
+  let chartData, chartOptions;
+  
+  switch(currentChartType) {
+    case 'bar':
+      // 月繳比較圖
+      chartData = {
+        labels: ['寬限期月繳', '本息攤還月繳', '每月租金'],
+        datasets: [{
+          label: '金額 (元)',
+          data: [interestOnly, payment, rent],
+          backgroundColor: [
+            'rgba(37, 99, 235, 0.8)',
+            'rgba(16, 185, 129, 0.8)',
+            'rgba(245, 158, 11, 0.8)'
+          ],
+          borderColor: [
+            'rgba(37, 99, 235, 1)',
+            'rgba(16, 185, 129, 1)',
+            'rgba(245, 158, 11, 1)'
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      };
+      
+      chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'NT$' + context.parsed.y.toFixed(0) + ' 元/月';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return 'NT$' + (value / 10000).toFixed(0) + '萬';
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      };
+      break;
+      
+    case 'cashflow':
+      // 現金流分析圖
+      chartData = {
+        labels: ['寬限期現金流', '本息攤還現金流'],
+        datasets: [{
+          label: '現金流 (元/月)',
+          data: [graceCashFlow, amortizingCashFlow],
+          backgroundColor: [
+            graceCashFlow >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)',
+            amortizingCashFlow >= 0 ? 'rgba(16, 185, 129, 0.8)' : 'rgba(239, 68, 68, 0.8)'
+          ],
+          borderColor: [
+            graceCashFlow >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)',
+            amortizingCashFlow >= 0 ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)'
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false
+        }]
+      };
+      
+      chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const value = context.parsed.y;
+                const sign = value >= 0 ? '+' : '';
+                return sign + 'NT$' + value.toFixed(0) + ' 元/月';
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(value) {
+                return 'NT$' + (value / 10000).toFixed(0) + '萬';
+              }
+            },
+            grid: {
+              color: 'rgba(0, 0, 0, 0.05)'
+            }
+          },
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      };
+      break;
+      
+    case 'pie':
+      // 費用分佈圖
+      chartData = {
+        labels: ['本金', '總利息'],
+        datasets: [{
+          label: '費用分佈',
+          data: [P, totalInterest],
+          backgroundColor: [
+            'rgba(37, 99, 235, 0.8)',
+            'rgba(245, 158, 11, 0.8)'
+          ],
+          borderColor: [
+            'rgba(37, 99, 235, 1)',
+            'rgba(245, 158, 11, 1)'
+          ],
+          borderWidth: 2,
+          hoverOffset: 10
+        }]
+      };
+      
+      chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return label + ': NT$' + value.toFixed(0) + ' 元 (' + percentage + '%)';
+              }
+            }
+          }
+        }
+      };
+      break;
+  }
+  
+  // 建立新圖表
+  mortgageChart = new Chart(ctx, {
+    type: currentChartType === 'pie' ? 'pie' : 'bar',
+    data: chartData,
+    options: chartOptions
+  });
 }
 
 // 頁面載入時自動計算一次
-calc();
+window.addEventListener('DOMContentLoaded', function() {
+  calc();
+});
 </script>
 </body>
 </html>
