@@ -1,58 +1,31 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>房貸現金流計算機</title>
+<title>財務工具集</title>
 <style>
 body{font-family:Arial,sans-serif;max-width:900px;margin:20px auto;padding:20px}
-input{width:120px;padding:6px}
-table{border-collapse:collapse}
-td{padding:6px}
-.result{background:#f5f5f5;padding:12px;margin-top:15px;border-radius:8px}
+.tool-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px;margin-top:30px}
+.tool-card{background:#f8f9fa;padding:25px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.1);text-decoration:none;color:#333;transition:transform 0.2s}
+.tool-card:hover{transform:translateY(-5px);box-shadow:0 4px 12px rgba(0,0,0,0.15)}
+.tool-card h3{margin-top:0;color:#2c3e50}
+.tool-card p{color:#666;margin-bottom:15px}
+.tool-btn{display:inline-block;padding:10px 20px;background:#3498db;color:white;border-radius:6px;font-weight:bold}
+.tool-btn:hover{background:#2980b9}
+h1{color:#2c3e50;border-bottom:3px solid #3498db;padding-bottom:10px}
 </style>
 </head>
 <body>
-<h2>房貸現金流計算機</h2>
+<h1>財務工具集</h1>
+<p>歡迎使用財務工具集，以下是我們提供的工具清單：</p>
 
-<table>
-<tr><td>貸款金額</td><td><input id="loan" value="7000000"></td></tr>
-<tr><td>利率(%)</td><td><input id="rate" value="2.275"></td></tr>
-<tr><td>貸款年限</td><td><input id="years" value="30"></td></tr>
-<tr><td>寬限期(年)</td><td><input id="grace" value="2"></td></tr>
-<tr><td>每月租金</td><td><input id="rent" value="25000"></td></tr>
-</table>
-
-<button onclick="calc()">計算</button>
-
-<div class="result" id="out"></div>
-
-<script>
-function calc(){
- let P=parseFloat(document.getElementById('loan').value);
- let annual=parseFloat(document.getElementById('rate').value)/100;
- let years=parseFloat(document.getElementById('years').value);
- let rent=parseFloat(document.getElementById('rent').value);
-
- let r=annual/12;
- let n=years*12;
-
- let interestOnly=P*annual/12;
- let payment=P*r/(1-Math.pow(1+r,-n));
-
- document.getElementById('out').innerHTML=`
- <b>寬限期月繳：</b>${interestOnly.toFixed(0)} 元<br>
- <b>本息攤還月繳：</b>${payment.toFixed(0)} 元<br><br>
-
- <b>寬限期現金流：</b>${(rent-interestOnly).toFixed(0)} 元/月<br>
- <b>本息攤還現金流：</b>${(rent-payment).toFixed(0)} 元/月<br><br>
-
- <b>若租金=${rent.toFixed(0)}元，打平貸款金額約：</b>
- ${(25000/payment*P).toFixed(0)} 元
- `;
-}
-calc();
-</script>
+<div class="tool-list">
+<a href="mortgage-calculator.html" class="tool-card">
+<h3>房貸現金流計算機</h3>
+<p>計算房貸的寬限期月繳、本息攤還月繳及現金流，幫助您評估房貸負擔與租金收益的平衡點。</p>
+<span class="tool-btn">前往使用 →</span>
+</a>
+</div>
 </body>
 </html>
