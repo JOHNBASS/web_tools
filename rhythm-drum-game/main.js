@@ -548,14 +548,15 @@ async function startGame() {
       startMediaPipeCamera();
       setDetectionStatus('', '🖐 揮動手部來敲鼓');
     } catch (err) {
-      console.warn('MediaPipe 初始化失敗，改用觸控/鍵盤控制:', err);
-      cameraOK = false;
-      stopCamera();
+      // 手勢辨識 (MediaPipe) 載入失敗，但攝像頭本身正常 →
+      // 保留鏡頭畫面，僅改用觸控/鍵盤輸入 (不要關掉鏡頭，否則會變黑畫面)
+      console.warn('手勢辨識載入失敗，保留鏡頭並改用觸控/鍵盤:', err);
+      elements.touchControls.style.display = 'flex';
+      clearHandCanvas();
+      setDetectionStatus('', '⚠️ 手勢辨識無法載入，請用觸控/鍵盤');
     }
-  }
-
-  if (!cameraOK) {
-    // 攝像頭或手勢辨識不可用，顯示觸控控制
+  } else {
+    // 完全沒有攝像頭 (權限被拒或停用) → 觸控/鍵盤模式
     elements.touchControls.style.display = 'flex';
     clearHandCanvas();
     setDetectionStatus('', '⌨️ 觸控/鍵盤模式 (無攝像頭)');
@@ -743,7 +744,7 @@ async function initMediaPipe() {
   }
   hands = new Hands({
     locateFile: (file) => {
-      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.165/${file}`;
+      return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
     },
     maxNumHands: 1,
     modelComplexity: 0,
