@@ -5,9 +5,36 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>節奏打鼓 - Air Drum Master</title>
   <link rel="stylesheet" href="style.css">
-  <!-- MediaPipe Hands (使用實際存在的版本號；0.4.165 不存在會 404) -->
+  <!-- MediaPipe Hands (使用實際存在的版本號) -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  
+  <!-- 防止 CDN 被阻擋的備用方案 -->
+  <script>
+    // 如果 MediaPipe 10 秒後還沒載入，顯示警告
+    setTimeout(() => {
+      if (typeof Hands === 'undefined' || typeof Camera === 'undefined') {
+        const warning = document.createElement('div');
+        warning.style.position = 'fixed';
+        warning.style.top = '10px';
+        warning.style.left = '10px';
+        warning.style.right = '10px';
+        warning.style.padding = '15px';
+        warning.style.background = '#ff4444';
+        warning.style.color = 'white';
+        warning.style.fontSize = '16px';
+        warning.style.textAlign = 'center';
+        warning.style.zIndex = '9999';
+        warning.style.borderRadius = '8px';
+        warning.style.fontWeight = 'bold';
+        warning.innerHTML = '⚠️ 手勢辨識模組載入失敗！若要使用手勢控制，請刷新頁面或檢查網路連線。';
+        document.body.appendChild(warning);
+        
+        // 5 秒後自動移除
+        setTimeout(() => warning.remove(), 5000);
+      }
+    }, 10000);
+  </script>
 </head>
 <body>
   <!-- 遊戲選單 -->

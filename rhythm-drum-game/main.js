@@ -5,6 +5,23 @@
  */
 
 // ============================================
+// MediaPipe 載入檢查
+// ============================================
+// 確保 MediaPipe 已經載入完成
+function checkMediaPipeLoaded() {
+  return typeof Hands !== 'undefined' && typeof Camera !== 'undefined';
+}
+
+// 如果 MediaPipe 沒有載入，自動切換到觸控模式
+if (!checkMediaPipeLoaded()) {
+  console.warn('MediaPipe 未載入完成，將強制使用觸控模式');
+  // 可以在此設定全局旗標，強制使用觸控
+  window.mediaPipeAvailable = false;
+} else {
+  window.mediaPipeAvailable = true;
+}
+
+// ============================================
 // 遊戲狀態
 // ============================================
 const gameState = {
@@ -545,27 +562,37 @@ async function startGame() {
   resetGameState();
   resetStrikeState();
 
-  // 啟動攝像頭 (如果啟用)。MediaPipe 來自 CDN，若無法載入則自動降級為觸控/鍵盤
+  // 啟動攝像頭 (如果啟用)
   let cameraOK = gameState.cameraEnabled ? await startCamera() : false;
 
   if (cameraOK) {
     try {
       await initMediaPipe();
       startMediaPipeCamera();
-      setDetectionStatus('', '🖐 揮動手部來敲鼓');
+      setDetectionStatus('', '🖐 請將手部放在攝像頭前');
+      console.log('手勢辨識啟動成功');
     } catch (err) {
       // 手勢辨識 (MediaPipe) 載入失敗，但攝像頭本身正常 →
-      // 保留鏡頭畫面，僅改用觸控/鍵盤輸入 (不要關掉鏡頭，否則會變黑畫面)
+      // 保留鏡頭畫面，僅改用觸控/鍵盤輸入
       console.warn('手勢辨識載入失敗，保留鏡頭並改用觸控/鍵盤:', err);
       elements.touchControls.style.display = 'flex';
       clearHandCanvas();
       setDetectionStatus('', '⚠️ 手勢辨識無法載入，請用觸控/鍵盤');
+      
+      // 顯示更多的除錯資訊在 console
+      console.error('MediaPipe載入錯誤:', err);
+      console.log('請檢查：');
+      console.log('1. 網路連線是否正常');
+      console.log('2. CDN 是否被阻擋 (例如：' + 
+          'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js)');
+      console.log('3. 是否有使用 ad blocker 阻擋 CDN');
     }
   } else {
     // 完全沒有攝像頭 (權限被拒或停用) → 觸控/鍵盤模式
     elements.touchControls.style.display = 'flex';
     clearHandCanvas();
     setDetectionStatus('', '⌨️ 觸控/鍵盤模式 (無攝像頭)');
+    console.log('使用觸控/鍵盤模式');
   }
   
   // 顯示遊戲畫面
@@ -713,19 +740,43 @@ function endGame() {
 // ============================================
 async function startCamera() {
   try {
+    // 先檢查相機是否可用
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error('瀏覽器不支援相機 API');
+    }
+    
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: 'user',
-        width: { ideal: 640 },
-        height: { ideal: 480 },
-        frameRate: { ideal: 15 }
-      }
+        width: { ideal: 640, min: 320 },
+        height: { ideal: 480, min: 240 },
+        frameRate: { ideal: 30, min: 15 }
+      },
+      audio: false
     });
     
     elements.cameraView.srcObject = cameraStream;
+    elements.cameraView.play().catch(e => {
+      console.error('攝像頭播放失敗:', e);
+    });
+    
     return true;
   } catch (err) {
     console.error('攝像頭權限被拒絕:', err);
+    
+    // 更詳細的錯誤訊息
+    let errorMessage = '相機無法使用';
+    if (err.name === 'NotAllowedError') {
+      errorMessage = '相機權限被拒絕，請允許網站使用相機';
+    } else if (err.name === 'NotFoundError') {
+      errorMessage = '找不到相機裝置';
+    } else if (err.name === 'NotReadableError') {
+      errorMessage = '相機正被其他應用程式使用';
+    }
+    
+    console.error('相機錯誤:', errorMessage);
+    setDetectionStatus('', `⚠️ ${errorMessage}`);
+    
     // 顯示觸控控制
     elements.touchControls.style.display = 'flex';
     elements.cameraEnabled = false;
@@ -748,30 +799,36 @@ async function initMediaPipe() {
   if (typeof Hands === 'undefined') {
     throw new Error('MediaPipe Hands 未載入 (CDN 無法存取)');
   }
+  
+  // 降低信心度門檻，提高偵測靈敏度
   hands = new Hands({
     locateFile: (file) => {
       return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`;
     },
-    maxNumHands: 1,
-    modelComplexity: 0,
-    minDetectionConfidence: 0.5,
-    minTrackingConfidence: 0.5
+    maxNumHands: 2,           // 支援兩隻手
+    modelComplexity: 0,        // 輕量模型
+    minDetectionConfidence: 0.3,  // 降低門檻，更容易偵測到手
+    minTrackingConfidence: 0.3   // 降低門檻，更容易追蹤
   });
   
+  console.log('MediaPipe Hands 初始化成功');
+  
   hands.onResults((results) => {
-    const landmarks = results.multiHandLandmarks && results.multiHandLandmarks[0];
+    // 嘗試取得任何一隻手的骨架
+    const allLandmarks = results.multiHandLandmarks || [];
+    const landmarks = allLandmarks[0];
 
-    // 繪製手部骨架，讓玩家看到自己的手有沒有被抓到
-    drawHandLandmarks(landmarks);
+    // 繪製所有偵測到的手部骨架
+    allLandmarks.forEach(lm => drawHandLandmarks(lm));
 
     if (!landmarks || !landmarks.length) {
       // 沒偵測到手 → 重置揮擊狀態，避免下次速度誤判
       resetStrikeState();
-      setDetectionStatus('', '🖐 揮動手部來敲鼓');
+      setDetectionStatus('', '🖐 尋找手部... 請保持手部在攝像頭前');
       return;
     }
 
-    setDetectionStatus('detected', '✋ 偵測到手部 ✓');
+    setDetectionStatus('detected', `✋ 偵測到 ${allLandmarks.length} 隻手 ✓`);
 
     if (gameState.isPlaying && !gameState.isPaused) {
       const drumType = detectStrike(landmarks); // 向下揮擊 → 對應的鼓
