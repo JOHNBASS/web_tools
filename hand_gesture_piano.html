@@ -8,200 +8,49 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.0/drawing_utils.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1648461914/hands.min.js"></script>
     <style>
-        :root {
-            --neon-blue: #00f7ff;
-            --neon-blue-dim: #00a2ff;
-            --glass-bg: rgba(0, 247, 255, 0.1);
-            --glass-border: rgba(0, 247, 255, 0.3);
-            --text-primary: #ffffff;
-            --text-secondary: #00f7ff;
-            --bg-dark: #0a0a0a;
-            --bg-darker: #050505;
-        }
-
+        :root { --neon-blue: #00f7ff; --neon-blue-dim: #00a2ff; --glass-bg: rgba(0, 247, 255, 0.1); --glass-border: rgba(0, 247, 255, 0.3); --text-primary: #ffffff; --bg-dark: #0a0a0a; --bg-darker: #050505; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow: hidden;
-        }
-
-        .glass-panel {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05);
-        }
-
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; overflow: hidden; }
+        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); }
         .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-
         header { text-align: center; margin-bottom: 30px; }
-        header h1 {
-            font-size: 2.5rem;
-            background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dim));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
-            margin-bottom: 10px;
-        }
+        header h1 { font-size: 2.5rem; background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dim)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(0, 247, 255, 0.5); margin-bottom: 10px; }
         header p { color: var(--neon-blue-dim); font-size: 1rem; }
-
-        .main-area {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 25px;
-        }
-        @media (max-width: 968px) {
-            .main-area { grid-template-columns: 1fr; }
-        }
-
-        .camera-container {
-            position: relative;
-            aspect-ratio: 16/9;
-            background: var(--bg-darker);
-            border-radius: 15px;
-            overflow: hidden;
-            border: 2px solid var(--glass-border);
-        }
+        .main-area { display: grid; grid-template-columns: 1fr 350px; gap: 25px; }
+        @media (max-width: 968px) { .main-area { grid-template-columns: 1fr; } }
+        .camera-container { position: relative; aspect-ratio: 16/9; background: var(--bg-darker); border-radius: 15px; overflow: hidden; border: 2px solid var(--glass-border); }
         .camera-container canvas { width: 100%; height: 100%; object-fit: cover; }
-
-        .piano-mode-indicator {
-            position: absolute;
-            top: 15px; left: 15px;
-            padding: 8px 15px;
-            background: var(--glass-bg);
-            border: 1px solid var(--neon-blue);
-            border-radius: 20px;
-            font-size: 0.85rem;
-            color: var(--neon-blue);
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .piano-mode-indicator .toggle-switch {
-            width: 40px; height: 20px;
-            background: var(--bg-darker);
-            border-radius: 10px;
-            position: relative;
-            cursor: pointer;
-            border: 1px solid var(--glass-border);
-        }
-        .piano-mode-indicator .toggle-switch::after {
-            content: ''; width: 16px; height: 16px;
-            background: var(--neon-blue);
-            border-radius: 50%;
-            position: absolute; top: 2px; left: 2px;
-            transition: transform 0.3s ease;
-        }
+        .piano-mode-indicator { position: absolute; top: 15px; left: 15px; padding: 8px 15px; background: var(--glass-bg); border: 1px solid var(--neon-blue); border-radius: 20px; font-size: 0.85rem; color: var(--neon-blue); z-index: 10; display: flex; align-items: center; gap: 8px; }
+        .piano-mode-indicator .toggle-switch { width: 40px; height: 20px; background: var(--bg-darker); border-radius: 10px; position: relative; cursor: pointer; border: 1px solid var(--glass-border); }
+        .piano-mode-indicator .toggle-switch::after { content: ''; width: 16px; height: 16px; background: var(--neon-blue); border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.3s ease; }
         .piano-mode-indicator.active .toggle-switch::after { transform: translateX(20px); }
-
-        .piano-keys {
-            position: absolute; top: 50%; left: 0; right: 0;
-            height: 200px; display: none; pointer-events: none;
-        }
+        .piano-keys { position: absolute; top: 50%; left: 0; right: 0; height: 200px; display: none; pointer-events: none; }
         .piano-mode-indicator.active ~ .piano-keys { display: flex; }
-        .piano-key {
-            flex: 1;
-            background: rgba(0, 247, 255, 0.05);
-            border-right: 1px solid var(--glass-border);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--neon-blue-dim); font-weight: bold;
-            transition: background 0.2s ease;
-        }
+        .piano-key { flex: 1; background: rgba(0, 247, 255, 0.05); border-right: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue-dim); font-weight: bold; transition: background 0.2s ease; }
         .piano-key:last-child { border-right: none; }
-        .piano-key.active {
-            background: rgba(0, 247, 255, 0.3);
-            color: var(--neon-blue);
-            box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
-        }
-
+        .piano-key.active { background: rgba(0, 247, 255, 0.3); color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 247, 255, 0.5); }
         .info-panel { display: flex; flex-direction: column; gap: 15px; }
-        .info-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05);
-            padding: 20px;
-        }
-
+        .info-card { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 20px; }
         .gesture-card { text-align: center; padding: 30px 20px; }
         .gesture-icon { font-size: 4rem; margin-bottom: 15px; opacity: 0.8; }
         .gesture-name { font-size: 1.5rem; color: var(--neon-blue); margin-bottom: 10px; font-weight: bold; }
         .gesture-subtitle { color: var(--neon-blue-dim); font-size: 0.9rem; }
-
         .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         @media (max-width: 968px) { .status-grid { grid-template-columns: 1fr; } }
-        .status-item {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05);
-            padding: 15px; text-align: center;
-        }
-        .status-label {
-            font-size: 0.85rem; color: var(--neon-blue-dim);
-            margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;
-        }
+        .status-item { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 15px; text-align: center; }
+        .status-label { font-size: 0.85rem; color: var(--neon-blue-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
         .status-value { font-size: 1.2rem; color: var(--neon-blue); font-weight: bold; }
-
-        .confidence-bar {
-            width: 100%; height: 8px;
-            background: var(--bg-darker);
-            border-radius: 4px; overflow: hidden;
-            margin-top: 10px;
-        }
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-dim));
-            border-radius: 4px; transition: width 0.3s ease;
-        }
-
-        .error-message {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05);
-            padding: 20px; text-align: center; color: #ff6b6b; display: none;
-        }
+        .confidence-bar { width: 100%; height: 8px; background: var(--bg-darker); border-radius: 4px; overflow: hidden; margin-top: 10px; }
+        .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-dim)); border-radius: 4px; transition: width 0.3s ease; }
+        .error-message { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 20px; text-align: center; color: #ff6b6b; display: none; }
         .error-message.show { display: block; }
-
-        .btn {
-            background: var(--glass-bg);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--glass-border);
-            border-radius: 25px;
-            color: var(--neon-blue);
-            padding: 12px 25px; font-size: 1rem;
-            cursor: pointer; transition: all 0.3s ease;
-            display: inline-flex; align-items: center; gap: 8px;
-        }
+        .btn { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 25px; color: var(--neon-blue); padding: 12px 25px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; }
         .btn:hover { background: var(--glass-bg); box-shadow: 0 0 20px rgba(0, 247, 255, 0.3); }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
         .musical-note { color: var(--neon-blue); animation: float 2s ease-in-out infinite; }
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-        .gesture-tag {
-            background: rgba(0, 247, 255, 0.1);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px; padding: 4px 12px;
-            font-size: 0.85rem; color: var(--neon-blue-dim);
-            display: inline-block; margin: 4px;
-        }
+        .gesture-tag { background: rgba(0, 247, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 20px; padding: 4px 12px; font-size: 0.85rem; color: var(--neon-blue-dim); display: inline-block; margin: 4px; }
+        .loading-spinner { border: 3px solid var(--glass-border); border-top: 3px solid var(--neon-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -211,13 +60,18 @@
             <p>使用 MediaPipe Hands 辨識手勢與演奏空中鋼琴</p>
         </header>
 
+        <div id="loadingScreen" style="text-align:center;padding:40px;display:block;">
+            <div class="loading-spinner"></div>
+            <p style="color:#00f7ff;margin-top:20px;">正在加載 MediaPipe... 請稍待</p>
+        </div>
+
         <div id="errorMessage" class="error-message">
-            <h3>⚠️ 相機權限被拒絕</h3>
-            <p>請允許網站使用您的相機才能啟用手勢辨識功能。</p>
+            <h3>⚠️ 錯誤</h3>
+            <p id="errorText">請刷新頁面重試</p>
             <button id="retryCamera" class="btn"><span>🔄 重新嘗試</span></button>
         </div>
 
-        <div class="main-area">
+        <div class="main-area" style="display:none;">
             <div class="camera-container">
                 <canvas id="output"></canvas>
                 <div id="pianoModeIndicator" class="piano-mode-indicator">
@@ -235,531 +89,79 @@
                     <div class="piano-key" data-note="Do2">Do</div>
                 </div>
             </div>
-
             <div class="info-panel">
                 <div class="info-card gesture-card">
                     <div id="gestureIcon" class="gesture-icon">👋</div>
                     <div id="gestureName" class="gesture-name">待辨識...</div>
                     <div class="gesture-subtitle">Hand Gesture Detection</div>
                 </div>
-
                 <div class="status-grid">
-                    <div class="status-item">
-                        <div class="status-label">FPS</div>
-                        <div id="fpsValue" class="status-value">--</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-label">音效 <span class="musical-note">🎵</span></div>
-                        <div id="soundName" class="status-value">--</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-label">置信度</div>
-                        <div id="confidenceValue" class="status-value">0%</div>
-                        <div class="confidence-bar">
-                            <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
-                        </div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-label">模式</div>
-                        <div id="modeName" class="status-value">手勢</div>
-                    </div>
+                    <div class="status-item"><div class="status-label">FPS</div><div id="fpsValue" class="status-value">--</div></div>
+                    <div class="status-item"><div class="status-label">音效 <span class="musical-note">🎵</span></div><div id="soundName" class="status-value">--</div></div>
+                    <div class="status-item"><div class="status-label">置信度</div><div id="confidenceValue" class="status-value">0%</div><div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width: 0%"></div></div></div>
+                    <div class="status-item"><div class="status-label">模式</div><div id="modeName" class="status-value">手勢</div></div>
                 </div>
-
-                <div class="info-card">
-                    <div class="status-label">支援手勢</div>
+                <div class="info-card"><div class="status-label">支援手勢</div>
                     <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
-                        <span class="gesture-tag">👆 1指</span>
-                        <span class="gesture-tag">✌️ 2指</span>
-                        <span class="gesture-tag">🤟 3指</span>
-                        <span class="gesture-tag">🖖️ 4指</span>
-                        <span class="gesture-tag">🙌 5指</span>
-                        <span class="gesture-tag">👊 握拳</span>
-                        <span class="gesture-tag">👌 OK</span>
-                        <span class="gesture-tag">👍 讚</span>
-                        <span class="gesture-tag">👎 倒讚</span>
+                        <span class="gesture-tag">👆 1指</span><span class="gesture-tag">✌️ 2指</span><span class="gesture-tag">🤟 3指</span><span class="gesture-tag">🖖️ 4指</span><span class="gesture-tag">🙌 5指</span><span class="gesture-tag">👊 握拳</span><span class="gesture-tag">👌 OK</span><span class="gesture-tag">👍 讚</span><span class="gesture-tag">👎 倒讚</span>
                     </div>
                 </div>
-
                 <div class="info-card" id="pianoInfoCard" style="display: none;">
                     <div class="status-label">Air Piano <span class="musical-note">🎶</span></div>
                     <div style="margin-top: 15px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
-                            <span style="color: var(--neon-blue-dim); font-size: 0.85rem;">左手</span>
-                            <span style="color: var(--neon-blue-dim); font-size: 0.85rem;">右手</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <div id="leftHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div>
-                            <div id="rightHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div>
-                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span style="color: var(--neon-blue-dim); font-size: 0.85rem;">左手</span><span style="color: var(--neon-blue-dim); font-size: 0.85rem;">右手</span></div>
+                        <div style="display: flex; justify-content: space-between;"><div id="leftHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div><div id="rightHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div></div>
                     </div>
-                    <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">
-                        使用食指指尖觸發音符
-                    </div>
+                    <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">使用食指指尖觸發音符</div>
                 </div>
-
-                <div class="info-card">
-                    <div class="status-label">💡 小提示</div>
-                    <div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">
-                        • 請允許相機權限<br>
-                        • 保持良好光線，手勢辨識更準確<br>
-                        • Air Piano 模式：食指指尖觸發音符<br>
-                        • 如果沒有聲音，請提供 MP3 檔案
-                    </div>
-                </div>
+                <div class="info-card"><div class="status-label">💡 小提示</div><div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">• 請允許相機權限<br>• 保持良好光線<br>• Air Piano: 食指指尖<br>• MP3 不存在時只有視覺效果</div></div>
             </div>
         </div>
     </div>
-
-    <!-- 隱藏的 Audio 元素 -->
     <div id="audioElements" style="display: none;">
-        <audio id="sound_one" src="index.mp3" preload="auto"></audio>
-        <audio id="sound_two" src="peace.mp3" preload="auto"></audio>
-        <audio id="sound_three" src="three.mp3" preload="auto"></audio>
-        <audio id="sound_four" src="four.mp3" preload="auto"></audio>
-        <audio id="sound_five" src="five.mp3" preload="auto"></audio>
-        <audio id="sound_fist" src="fist.mp3" preload="auto"></audio>
-        <audio id="sound_ok" src="ok.mp3" preload="auto"></audio>
-        <audio id="sound_thumbup" src="thumbup.mp3" preload="auto"></audio>
-        <audio id="sound_thumbdown" src="thumbdown.mp3" preload="auto"></audio>
-        <audio id="piano_Do" src="piano_do.mp3" preload="auto"></audio>
-        <audio id="piano_Re" src="piano_re.mp3" preload="auto"></audio>
-        <audio id="piano_Mi" src="piano_mi.mp3" preload="auto"></audio>
-        <audio id="piano_Fa" src="piano_fa.mp3" preload="auto"></audio>
-        <audio id="piano_Sol" src="piano_sol.mp3" preload="auto"></audio>
-        <audio id="piano_La" src="piano_la.mp3" preload="auto"></audio>
-        <audio id="piano_Si" src="piano_si.mp3" preload="auto"></audio>
-        <audio id="piano_Do2" src="piano_do2.mp3" preload="auto"></audio>
+        <audio id="sound_one" src="index.mp3" preload="auto"></audio><audio id="sound_two" src="peace.mp3" preload="auto"></audio><audio id="sound_three" src="three.mp3" preload="auto"></audio><audio id="sound_four" src="four.mp3" preload="auto"></audio><audio id="sound_five" src="five.mp3" preload="auto"></audio><audio id="sound_fist" src="fist.mp3" preload="auto"></audio><audio id="sound_ok" src="ok.mp3" preload="auto"></audio><audio id="sound_thumbup" src="thumbup.mp3" preload="auto"></audio><audio id="sound_thumbdown" src="thumbdown.mp3" preload="auto"></audio>
+        <audio id="piano_Do" src="piano_do.mp3" preload="auto"></audio><audio id="piano_Re" src="piano_re.mp3" preload="auto"></audio><audio id="piano_Mi" src="piano_mi.mp3" preload="auto"></audio><audio id="piano_Fa" src="piano_fa.mp3" preload="auto"></audio><audio id="piano_Sol" src="piano_sol.mp3" preload="auto"></audio><audio id="piano_La" src="piano_la.mp3" preload="auto"></audio><audio id="piano_Si" src="piano_si.mp3" preload="auto"></audio><audio id="piano_Do2" src="piano_do2.mp3" preload="auto"></audio>
     </div>
-
     <script>
-        // ============================================
-        // 全局常數與配置
-        // ============================================
-        
-        const GESTURES = {
-            UNKNOWN: { id: 'unknown', name: '未知', icon: '❓', sound: null },
-            ONE: { id: 'one', name: '1 指', icon: '👆', sound: 'one' },
-            TWO: { id: 'two', name: '2 指', icon: '✌️', sound: 'two' },
-            THREE: { id: 'three', name: '3 指', icon: '🤟', sound: 'three' },
-            FOUR: { id: 'four', name: '4 指', icon: '🖖️', sound: 'four' },
-            FIVE: { id: 'five', name: '5 指', icon: '🙌', sound: 'five' },
-            FIST: { id: 'fist', name: '握拳', icon: '👊', sound: 'fist' },
-            OK: { id: 'ok', name: 'OK', icon: '👌', sound: 'ok' },
-            THUMB_UP: { id: 'thumbup', name: '讚', icon: '👍', sound: 'thumbup' },
-            THUMB_DOWN: { id: 'thumbdown', name: '倒讚', icon: '👎', sound: 'thumbdown' }
-        };
-
-        const gestureSounds = {
-            one: 'sound_one', two: 'sound_two', three: 'sound_three',
-            four: 'sound_four', five: 'sound_five', fist: 'sound_fist',
-            ok: 'sound_ok', thumbup: 'sound_thumbup', thumbdown: 'sound_thumbdown'
-        };
-
-        const PIANO_NOTES = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do2'];
-        const PIANO_SOUNDS = {
-            Do: 'piano_Do', Re: 'piano_Re', Mi: 'piano_Mi', Fa: 'piano_Fa',
-            Sol: 'piano_Sol', La: 'piano_La', Si: 'piano_Si', Do2: 'piano_Do2'
-        };
-
-        const CONFIG = {
-            GESTURE_STABILITY_FRAMES: 5,
-            SOUND_COOLDOWN: 1000,
-            PIANO_DEBOUNCE: 150,
-            PIANO_COOLDOWN: 100,
-            FINGER_EXTENDED_THRESHOLD: 160,
-            FINGER_FLEXED_THRESHOLD: 40,
-            OK_DISTANCE_THRESHOLD: 0.05,
-            THUMB_UP_THRESHOLD: 0.3,
-            THUMB_DOWN_THRESHOLD: -0.3
-        };
-
-        // ============================================
-        // 全局狀態變數
-        // ============================================
-        
-        let camera = null, hands = null, canvasCtx = null, canvasElement = null;
-        let results = null, isPianoMode = false, isInitialized = false;
-        let currentGesture = GESTURES.UNKNOWN, gestureStabilityCounter = 0;
-        let lastGesture = null, soundCooldownEnd = 0;
-        let leftHandActiveKey = null, rightHandActiveKey = null;
-        let lastPianoPlayTime = { left: 0, right: 0 };
-        let pianoDebounceEnd = { left: 0, right: 0 };
-        let frameCount = 0, fps = 0, lastFpsUpdate = performance.now();
-
-        // ============================================
-        // 初始化函數
-        // ============================================
-        
-        async function init() {
-            if (isInitialized) return;
-            isInitialized = true;
-            console.log('🚀 初始化應用程式...');
-            
-            initUI();
-            await initMediaPipe();
-            await setupCamera();
-            startDetection();
-            console.log('✅ 初始化完成!');
+        // CONFIG
+        const G={U:{id:'unknown',name:'未知',icon:'❓'},O:{id:'one',name:'1指',icon:'👆'},T:{id:'two',name:'2指',icon:'✌️'},H:{id:'three',name:'3指',icon:'🤟'},F:{id:'four',name:'4指',icon:'🖖️'},V:{id:'five',name:'5指',icon:'🙌'},S:{id:'fist',name:'握拳',icon:'👊'},K:{id:'ok',name:'OK',icon:'👌'},U2:{id:'thumbup',name:'讚',icon:'👍'},D:{id:'thumbdown',name:'倒讚',icon:'👎'}};
+        const S={o:'sound_one',t:'sound_two',h:'sound_three',f:'sound_four',v:'sound_five',s:'sound_fist',k:'sound_ok',u2:'sound_thumbup',d:'sound_thumbdown'};
+        const P=['Do','Re','Mi','Fa','Sol','La','Si','Do2']; const PS={Do:'piano_Do',Re:'piano_Re',Mi:'piano_Mi',Fa:'piano_Fa',Sol:'piano_Sol',La:'piano_La',Si:'piano_Si',Do2:'piano_Do2'};
+        const C={ST:5,CD:1000,PD:150,PC:100,FT:160,OK:0.05,TU:-0.3,TD:0.3};
+        // STATE
+        let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now();
+        // ELEMENTS
+        let ls,em,et,rm,pi,pic,pgic,gn,gv,cf,fpsv,sn,mn,lhn,rhn,pks;
+        function getElements(){
+            ls=document.getElementById('loadingScreen');em=document.getElementById('errorMessage');et=document.getElementById('errorText');rm=document.getElementById('retryCamera');pi=document.getElementById('pianoToggle');pic=document.getElementById('pianoModeIndicator');pgic=document.getElementById('pianoInfoCard');gn=document.getElementById('gestureName');gv=document.getElementById('gestureIcon');cv=document.getElementById('confidenceValue');fpsv=document.getElementById('fpsValue');sn=document.getElementById('soundName');mn=document.getElementById('modeName');lhn=document.getElementById('leftHandNote');rhn=document.getElementById('rightHandNote');pks=document.querySelectorAll('.piano-key');can=document.getElementById('output');ctx=can.getContext('2d');cf=document.getElementById('confidenceFill');
         }
-
-        function initUI() {
-            console.log('🎨 初始化 UI...');
-            canvasElement = document.getElementById('output');
-            canvasCtx = canvasElement.getContext('2d');
-            
-            document.getElementById('pianoToggle').addEventListener('click', () => {
-                isPianoMode = !isPianoMode;
-                document.getElementById('pianoModeIndicator').classList.toggle('active', isPianoMode);
-                document.getElementById('pianoInfoCard').style.display = isPianoMode ? 'block' : 'none';
-                updateGestureDisplay(GESTURES.UNKNOWN, 0);
-                updateModeName();
-            });
-            
-            document.getElementById('retryCamera').addEventListener('click', async () => {
-                document.getElementById('errorMessage').classList.remove('show');
-                await setupCamera();
-            });
-        }
-
-        async function initMediaPipe() {
-            console.log('🤖 初始化 MediaPipe Hands...');
-            try {
-                hands = new Hands({
-                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1648461914/${file}`
-                });
-                hands.setOptions({
-                    maxNumHands: 2,
-                    modelComplexity: 1,
-                    minDetectionConfidence: 0.5,
-                    minTrackingConfidence: 0.5
-                });
-                hands.onResults((detectedResults) => { results = detectedResults; });
-                console.log('✅ MediaPipe Hands 初始化成功!');
-            } catch (error) {
-                console.error('❌ MediaPipe 初始化失敗:', error);
-                showError('MediaPipe 加載失敗，請刷新頁面重試。');
-                throw error;
-            }
-        }
-
-        async function setupCamera() {
-            console.log('📹 設定相機...');
-            try {
-                if (camera) { camera.stop(); camera = null; }
-                
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
-                    audio: false
-                });
-                
-                camera = new Camera(stream, {
-                    onFrame: async () => {
-                        if (hands) await hands.send({ image: stream });
-                    },
-                    width: 1280, height: 720
-                });
-                
-                resizeCanvas();
-                document.getElementById('errorMessage').classList.remove('show');
-                console.log('✅ 相機設定成功!');
-            } catch (error) {
-                console.error('❌ 相機權限被拒絕:', error);
-                showError('相機權限被拒絕，請允許網站使用相機。');
-                throw error;
-            }
-        }
-
-        function showError(message) {
-            const errorElement = document.getElementById('errorMessage');
-            errorElement.querySelector('p').textContent = message;
-            errorElement.classList.add('show');
-            console.error('❌ 錯誤:', message);
-        }
-
-        function resizeCanvas() {
-            if (camera && camera.video) {
-                canvasElement.width = camera.video.videoWidth;
-                canvasElement.height = camera.video.videoHeight;
-            } else {
-                canvasElement.width = 1280;
-                canvasElement.height = 720;
-            }
-        }
-
-        // ============================================
-        // 手勢辨識函數
-        // ============================================
-        
-        function startDetection() {
-            console.log('🔍 開始手勢偵測...');
-            function detectFrame(timestamp) {
-                frameCount++;
-                if (timestamp - lastFpsUpdate >= 1000) {
-                    fps = Math.round((frameCount * 1000) / (timestamp - lastFpsUpdate));
-                    frameCount = 0; lastFpsUpdate = timestamp;
-                    document.getElementById('fpsValue').textContent = fps;
-                }
-                drawCameraFrame();
-                if (results && results.multiHandLandmarks) {
-                    drawHandLandmarks(results.multiHandLandmarks);
-                    if (isPianoMode) processAirPiano(results.multiHandLandmarks);
-                    else processGestureRecognition(results.multiHandLandmarks);
-                } else if (!isPianoMode) {
-                    gestureStabilityCounter = 0;
-                    updateGestureDisplay(GESTURES.UNKNOWN, 0);
-                }
-                requestAnimationFrame(detectFrame);
-            }
-            requestAnimationFrame(detectFrame);
-        }
-
-        function drawCameraFrame() {
-            if (camera && camera.video) {
-                const video = camera.video;
-                canvasCtx.save();
-                canvasCtx.scale(-1, 1);
-                canvasCtx.translate(-canvasElement.width, 0);
-                canvasCtx.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
-                canvasCtx.restore();
-            }
-        }
-
-        function drawHandLandmarks(multiHandLandmarks) {
-            for (const landmarks of multiHandLandmarks) {
-                drawLandmarks(landmarks);
-                drawConnections(landmarks);
-            }
-        }
-
-        function drawLandmarks(landmarks) {
-            const radius = (data) => Math.max(2, Math.min(6, data.from ? data.from.z * -300 : 2));
-            for (const landmark of landmarks) {
-                canvasCtx.beginPath();
-                canvasCtx.arc(landmark.x * canvasElement.width, landmark.y * canvasElement.height, radius(landmark), 0, 2 * Math.PI);
-                const gradient = canvasCtx.createRadialGradient(
-                    landmark.x * canvasElement.width, landmark.y * canvasElement.height, 0,
-                    landmark.x * canvasElement.width, landmark.y * canvasElement.height, radius(landmark) * 2
-                );
-                gradient.addColorStop(0, '#00f7ff'); gradient.addColorStop(1, '#00a2ff');
-                canvasCtx.fillStyle = gradient; canvasCtx.fill();
-                canvasCtx.strokeStyle = '#ffffff'; canvasCtx.lineWidth = 1; canvasCtx.stroke();
-            }
-        }
-
-        function drawConnections(landmarks) {
-            const connections = [
-                [0,1],[1,2],[2,3],[3,4], [0,5],[5,6],[6,7],[7,8],
-                [0,9],[9,10],[10,11],[11,12], [0,13],[13,14],[14,15],[15,16],
-                [0,17],[17,18],[18,19],[19,20], [5,9],[9,13],[13,17]
-            ];
-            connections.forEach(([a,b]) => drawConnection(landmarks[a], landmarks[b]));
-        }
-
-        function drawConnection(point1, point2) {
-            canvasCtx.beginPath();
-            canvasCtx.moveTo(point1.x * canvasElement.width, point1.y * canvasElement.height);
-            canvasCtx.lineTo(point2.x * canvasElement.width, point2.y * canvasElement.height);
-            canvasCtx.strokeStyle = '#00f7ff'; canvasCtx.lineWidth = 2; canvasCtx.lineCap = 'round';
-            canvasCtx.stroke();
-        }
-
-        // ============================================
-        // 手勢辨識邏輯
-        // ============================================
-        
-        function processGestureRecognition(multiHandLandmarks) {
-            if (multiHandLandmarks.length === 0) {
-                gestureStabilityCounter = 0;
-                updateGestureDisplay(GESTURES.UNKNOWN, 0);
-                return;
-            }
-            const landmarks = multiHandLandmarks[0];
-            const gesture = recognizeGesture(landmarks);
-            if (gesture === currentGesture) gestureStabilityCounter++;
-            else { gestureStabilityCounter = 1; currentGesture = gesture; }
-            const confidence = Math.min(100, gestureStabilityCounter * 20);
-            updateGestureDisplay(gesture, confidence);
-            if (gestureStabilityCounter >= CONFIG.GESTURE_STABILITY_FRAMES && gesture.id !== 'unknown' && gesture !== lastGesture) {
-                playGestureSound(gesture); lastGesture = gesture;
-            }
-        }
-
-        function recognizeGesture(landmarks) {
-            const fingers = getFingerStates(landmarks);
-            const extendedFingers = fingers.filter(f => f === 'extended').length;
-            if (isOKGesture(landmarks, fingers)) return GESTURES.OK;
-            if (extendedFingers === 0) return GESTURES.FIST;
-            if (isThumbUp(landmarks, fingers)) return GESTURES.THUMB_UP;
-            if (isThumbDown(landmarks, fingers)) return GESTURES.THUMB_DOWN;
-            switch(extendedFingers) {
-                case 1: if (fingers[1] === 'extended' && fingers[0] === 'flexed') return GESTURES.ONE; break;
-                case 2: if (fingers[1] === 'extended' && fingers[2] === 'extended' && fingers[0] === 'flexed' && fingers[3] === 'flexed' && fingers[4] === 'flexed') return GESTURES.TWO; break;
-                case 3: return GESTURES.THREE;
-                case 4: return GESTURES.FOUR;
-                case 5: return GESTURES.FIVE;
-            }
-            return GESTURES.UNKNOWN;
-        }
-
-        function getFingerStates(landmarks) {
-            const states = [];
-            const thumbAngle = calculateAngle(landmarks[0], landmarks[1], landmarks[2]);
-            states.push(thumbAngle > 120 ? 'extended' : 'flexed');
-            states.push(getFingerState(landmarks, 5));
-            states.push(getFingerState(landmarks, 9));
-            states.push(getFingerState(landmarks, 13));
-            states.push(getFingerState(landmarks, 17));
-            return states;
-        }
-
-        function getFingerState(landmarks, baseIndex) {
-            const angle = calculateAngle(landmarks[baseIndex], landmarks[baseIndex + 1], landmarks[baseIndex + 2]);
-            return angle > CONFIG.FINGER_EXTENDED_THRESHOLD ? 'extended' : 'flexed';
-        }
-
-        function calculateAngle(p1, p2, p3) {
-            const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
-            const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
-            const dot = v1.x * v2.x + v1.y * v2.y;
-            const len1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
-            const len2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
-            if (len1 === 0 || len2 === 0) return 0;
-            return Math.acos(dot / (len1 * len2)) * (180 / Math.PI);
-        }
-
-        function isOKGesture(landmarks, fingers) {
-            const thumbTip = landmarks[4], indexTip = landmarks[8];
-            const distance = Math.sqrt(Math.pow(thumbTip.x - indexTip.x, 2) + Math.pow(thumbTip.y - indexTip.y, 2));
-            return distance < CONFIG.OK_DISTANCE_THRESHOLD && fingers[2] === 'extended' && fingers[3] === 'extended' && fingers[4] === 'extended';
-        }
-
-        function isThumbUp(landmarks, fingers) {
-            const thumbTip = landmarks[4], wrist = landmarks[0];
-            return thumbTip.y < wrist.y - CONFIG.THUMB_UP_THRESHOLD && fingers[1] === 'flexed' && fingers[2] === 'flexed' && fingers[3] === 'flexed' && fingers[4] === 'flexed';
-        }
-
-        function isThumbDown(landmarks, fingers) {
-            const thumbTip = landmarks[4], wrist = landmarks[0];
-            return thumbTip.y > wrist.y + CONFIG.THUMB_DOWN_THRESHOLD && fingers[1] === 'flexed' && fingers[2] === 'flexed' && fingers[3] === 'flexed' && fingers[4] === 'flexed';
-        }
-
-        // ============================================
-        // Air Piano 邏輯
-        // ============================================
-        
-        function processAirPiano(multiHandLandmarks) {
-            leftHandActiveKey = null; rightHandActiveKey = null;
-            for (let i = 0; i < multiHandLandmarks.length; i++) {
-                const landmarks = multiHandLandmarks[i];
-                const isLeftHand = i === 0, indexFingertip = landmarks[8];
-                const keyIndex = getPianoKeyIndex(indexFingertip.x);
-                if (keyIndex !== -1) {
-                    const note = PIANO_NOTES[keyIndex], handKey = isLeftHand ? 'left' : 'right';
-                    const currentTime = performance.now();
-                    if (currentTime > pianoDebounceEnd[handKey] && currentTime > lastPianoPlayTime[handKey] + CONFIG.PIANO_COOLDOWN) {
-                        if (isLeftHand) leftHandActiveKey = note; else rightHandActiveKey = note;
-                        playPianoNote(note, handKey);
-                        pianoDebounceEnd[handKey] = currentTime + CONFIG.PIANO_DEBOUNCE;
-                        lastPianoPlayTime[handKey] = currentTime;
-                    }
-                }
-            }
-            updatePianoDisplay();
-        }
-
-        function getPianoKeyIndex(x) {
-            const keyWidth = 1 / PIANO_NOTES.length;
-            for (let i = 0; i < PIANO_NOTES.length; i++) {
-                if (x >= i * keyWidth && x < (i + 1) * keyWidth) return i;
-            }
-            return -1;
-        }
-
-        function playPianoNote(note, handKey) {
-            const soundId = PIANO_SOUNDS[note], audioElement = document.getElementById(soundId);
-            if (audioElement) { playAudioWithWebAudio(audioElement); updateSoundName(`${note} (${handKey === 'left' ? '左' : '右'}手)`); }
-            else { console.warn(`⚠️ 音效檔案不存在: ${soundId}`); console.warn('Sound not found:', soundId); }
-        }
-
-        // ============================================
-        // 音效播放函數
-        // ============================================
-        
-        function playGestureSound(gesture) {
-            const currentTime = performance.now();
-            if (currentTime < soundCooldownEnd) { console.log('⏳ 音效 cooldown 中'); return; }
-            const soundId = gestureSounds[gesture.id], audioElement = document.getElementById(soundId);
-            if (audioElement) { playAudioWithWebAudio(audioElement); updateSoundName(gesture.name); soundCooldownEnd = currentTime + CONFIG.SOUND_COOLDOWN; }
-            else { console.warn(`⚠️ 音效檔案不存在: ${soundId}`); console.warn('Sound not found:', soundId); }
-        }
-
-        function playAudioWithWebAudio(audioElement) {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            if (AudioContext) {
-                try {
-                    const audioContext = new AudioContext();
-                    const source = audioContext.createMediaElementSource(audioElement);
-                    source.connect(audioContext.destination);
-                    audioElement.currentTime = 0;
-                    const playPromise = audioElement.play();
-                    if (playPromise !== undefined) playPromise.catch(error => console.warn('音效播放失敗:', error));
-                } catch (error) { console.warn('WebAudio API 失敗，使用傳統方式:', error); fallbackPlayAudio(audioElement); }
-            } else { fallbackPlayAudio(audioElement); }
-        }
-
-        function fallbackPlayAudio(audioElement) {
-            audioElement.currentTime = 0;
-            audioElement.play().catch(e => console.warn('音效播放失敗:', e));
-        }
-
-        // ============================================
-        // UI 更新函數
-        // ============================================
-        
-        function updateGestureDisplay(gesture, confidence) {
-            document.getElementById('gestureIcon').textContent = gesture.icon;
-            document.getElementById('gestureName').textContent = gesture.name;
-            document.getElementById('confidenceValue').textContent = `${Math.round(confidence)}%`;
-            document.getElementById('confidenceFill').style.width = `${confidence}%`;
-        }
-        function updateSoundName(name) {
-            const el = document.getElementById('soundName');
-            el.textContent = name; el.style.opacity = '1';
-            setTimeout(() => { el.style.transition = 'opacity 0.5s ease'; el.style.opacity = '0.7'; }, 100);
-        }
-        function updateModeName() {
-            document.getElementById('modeName').textContent = isPianoMode ? '空中鋼琴' : '手勢辨識';
-        }
-        function updatePianoDisplay() {
-            document.getElementById('leftHandNote').textContent = leftHandActiveKey || '--';
-            document.getElementById('rightHandNote').textContent = rightHandActiveKey || '--';
-            document.querySelectorAll('.piano-key').forEach(key => key.classList.remove('active'));
-            if (leftHandActiveKey) {
-                const el = document.querySelector(`.piano-key[data-note="${leftHandActiveKey}"]`);
-                if (el) el.classList.add('active');
-            }
-            if (rightHandActiveKey) {
-                const el = document.querySelector(`.piano-key[data-note="${rightHandActiveKey}"]`);
-                if (el) el.classList.add('active');
-            }
-        }
-
-        // ============================================
-        // 事件監聽
-        // ============================================
-        
-        window.addEventListener('resize', resizeCanvas);
-        window.addEventListener('beforeunload', () => {
-            if (camera) camera.stop(); if (hands) hands.close();
-        });
-
-        let initCalled = false;
-        function safeInit() {
-            if (initCalled) return; initCalled = true;
-            init().catch(err => { console.error('初始化失敗:', err); showError('初始化失敗，請刷新頁面重試。'); });
-        }
-        window.addEventListener('load', safeInit);
-        document.addEventListener('DOMContentLoaded', safeInit);
+        function showLoading(){ls.style.display='block';}
+        function hideLoading(){ls.style.display='none';}
+        function showError(msg){et.textContent=msg;em.classList.add('show');}
+        function hideError(){em.classList.remove('show');}
+        function updateGesture(g,c){gv.textContent=g.icon;gn.textContent=g.name;cv.textContent=Math.round(c)+'%';cf.style.width=c+'%';}
+        function updateSound(n){sn.textContent=n;sn.style.opacity='1';setTimeout(()=>{sn.style.transition='opacity 0.5s';sn.style.opacity='0.7';},100);}
+        function updatePiano(){lhn.textContent=lh||'--';rhn.textContent=rh||'--';pks.forEach(k=>k.classList.remove('active'));if(lh){const e=document.querySelector(`.piano-key[data-note="${lh}"]`);if(e)e.classList.add('active');}if(rh){const e=document.querySelector(`.piano-key[data-note="${rh}"]`);if(e)e.classList.add('active');}}
+        function resizeCanvas(){if(cam?.video){can.width=cam.video.videoWidth;can.height=cam.video.videoHeight;}else{can.width=1280;can.height=720;}}
+        function play(el){const AC=window.AudioContext||window.webkitAudioContext;if(AC){try{const c=new AC(),s=c.createMediaElementSource(el);s.connect(c.destination);el.currentTime=0;const pp=el.play();if(pp)pp.catch(()=>{});}catch(e){el.currentTime=0;el.play().catch(()=>{});}}else{el.currentTime=0;el.play().catch(()=>{});}}
+        function playSound(gid){const now=performance.now();if(now<cdEnd)return;const el=document.getElementById(S[gid]);if(el){play(el);updateSound(G[gid.substring(0,1).toUpperCase()+'2'||gid.substring(0,1).toUpperCase()]?.name||gid);cdEnd=now+C.CD;}else console.warn('Sound not found:',S[gid]);}
+        function playPiano(note,hk){const el=document.getElementById(PS[note]);if(el){play(el);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}else console.warn('Sound not found:',PS[note]);}
+        function calcAngle(p1,p2,p3){const v1={x:p1.x-p2.x,y:p1.y-p2.y},v2={x:p3.x-p2.x,y:p3.y-p2.y},dot=v1.x*v2.x+v1.y*v2.y,l1=Math.sqrt(v1.x*v1.x+v1.y*v1.y),l2=Math.sqrt(v2.x*v2.x+v2.y*v2.y);if(!l1||!l2)return 0;return Math.acos(dot/(l1*l2))*(180/Math.PI);}
+        function getFingers(lm){const s=[];s.push(calcAngle(lm[0],lm[1],lm[2])>120?'e':'f');s.push(calcAngle(lm[5],lm[6],lm[7])>C.FT?'e':'f');s.push(calcAngle(lm[9],lm[10],lm[11])>C.FT?'e':'f');s.push(calcAngle(lm[13],lm[14],lm[15])>C.FT?'e':'f');s.push(calcAngle(lm[17],lm[18],lm[19])>C.FT?'e':'f');return s;}
+        function recognize(lm){const f=getFingers(lm),ef=f.filter(x=>x==='e').length;if(ef===0)return G.S;const d=Math.sqrt(Math.pow(lm[4].x-lm[8].x,2)+Math.pow(lm[4].y-lm[8].y,2));if(d<C.OK&&f[2]==='e'&&f[3]==='e'&&f[4]==='e')return G.K;if(lm[4].y<lm[0].y+C.TU&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.U2;if(lm[4].y>lm[0].y+C.TD&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.D;switch(ef){case 1:if(f[1]==='e'&&f[0]==='f')return G.O;break;case 2:if(f[1]==='e'&&f[2]==='e'&&f[0]==='f'&&f[3]==='f'&&f[4]==='f')return G.T;break;case 3:return G.H;case 4:return G.F;case 5:return G.V;}return G.U;}
+        function getKeyIdx(x){const w=1/P.length;for(let i=0;i<P.length;i++)if(x>=i*w&&x<(i+1)*w)return i;return -1;}
+        function drawFrame(){if(cam?.video){const v=cam.video;ctx.save();ctx.scale(-1,1);ctx.translate(-can.width,0);ctx.drawImage(v,0,0,can.width,can.height);ctx.restore();}}
+        function drawHands(all){all.forEach(landmarks=>{drawLandmarks(landmarks);drawConnections(landmarks);});}
+        function drawLandmarks(lm){const r=(d)=>Math.max(2,Math.min(6,d.from?.z*-300||2));lm.forEach(l=>{ctx.beginPath();ctx.arc(l.x*can.width,l.y*can.height,r(l),0,Math.PI*2);const g=ctx.createRadialGradient(l.x*can.width,l.y*can.height,0,l.x*can.width,l.y*can.height,r(l)*2);g.addColorStop(0,'#00f7ff');g.addColorStop(1,'#00a2ff');ctx.fillStyle=g;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();});}
+        function drawConnections(lm){const cons=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];cons.forEach(([a,b])=>drawConn(lm[a],lm[b]));}
+        function drawConn(p1,p2){ctx.beginPath();ctx.moveTo(p1.x*can.width,p1.y*can.height);ctx.lineTo(p2.x*can.width,p2.y*can.height);ctx.strokeStyle='#00f7ff';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();}
+        function processGesture(all){if(!all.length){stab=0;updateGesture(G.U,0);return;}const g=recognize(all[0]);stab=g===curG?stab+1:1;curG=g;const c=Math.min(100,stab*20);updateGesture(g,c);if(stab>=C.ST&&g.id!=='unknown'&&g!==lastG){playSound(g.id);lastG=g;}}
+        function processPiano(all){lh=null;rh=null;all.forEach((lm,i)=>{const isLeft=i===0,tip=lm[8],idx=getKeyIdx(tip.x);if(idx!==-1){const note=P[idx],hk=isLeft?'l':'r',now=performance.now();if(now>pd[hk]&&now>pt[hk]+C.PC){if(isLeft)lh=note;else rh=note;playPiano(note,hk);pd[hk]=now+C.PD;pt[hk]=now;}}});updatePiano();}
+        async function setupCamera(){try{if(cam){cam.stop();cam=null;}const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false});cam=new Camera(stream,{onFrame:async()=>{if(hands)await hands.send({image:stream});},width:1280,height:720});resizeCanvas();hideError();}catch(err){showError('相機權限被拒絕，請允許使用相機');throw err;}}
+        function startDetection(){function frame(t){fc++;if(t-lf>=1000){fps=Math.round(fc*1000/(t-lf));fc=0;lf=t;fpsv.textContent=fps;}drawFrame();if(res?.multiHandLandmarks){drawHands(res.multiHandLandmarks);isPiano?processPiano(res.multiHandLandmarks):processGesture(res.multiHandLandmarks);}else if(!isPiano){stab=0;updateGesture(G.U,0);}requestAnimationFrame(frame);}requestAnimationFrame(frame);}
+        async function init(){if(isInit)return;isInit=true;console.log('🚀 初始化...');showLoading();try{getElements();pi.onclick=()=>{isPiano=!isPiano;pic.classList.toggle('active',isPiano);pgic.style.display=isPiano?'block':'none';updateGesture(G.U,0);mn.textContent=isPiano?'空中鋼琴':'手勢辨識';};rm.onclick=async()=>{hideError();await setupCamera();};if(typeof Hands==='undefined'){await new Promise((r,j)=>{let c=0;const chk=()=>{if(typeof Hands!=='undefined')r();else if(c++<100)setTimeout(chk,100);else j(new Error('MediaPipe 加載超時'));};chk();});}hands=new Hands({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1648461914/${f}`});hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.5,minTrackingConfidence:0.5});hands.onResults(r=>{res=r;});console.log('✅ MediaPipe 完成');await setupCamera();hideLoading();document.querySelector('.main-area').style.display='grid';isReady=true;startDetection();console.log('✅ 初始化完成!');}catch(err){hideLoading();console.error('❌ 初始化失敗:',err);showError('加載失敗，請刷新頁面重試');}}
+        window.addEventListener('resize',resizeCanvas);window.addEventListener('beforeunload',()=>{if(cam)cam.stop();if(hands)hands.close();});
+        let initCalled=false;function start(){if(initCalled)return;initCalled=true;if(typeof Hands==='undefined'){setTimeout(start,100);return;}init().catch(err=>{console.error('初始化失敗:',err);showError('初始化失敗，請刷新頁面');});}start();
     </script>
 </body>
 </html>
