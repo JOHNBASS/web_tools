@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>手勢辨識 & Air Piano</title>
+    <style>
+        /* ============================================
+           CSS 樣式 - 黑底 + 霓虹藍 + Glassmorphism
+           ============================================ */
+        
+        :root {
+            --neon-blue: #00f7ff;
+            --neon-blue-dim: #00a2ff;
+            --glass-bg: rgba(0, 247, 255, 0.1);
+            --glass-border: rgba(0, 247, 255, 0.3);
+            --text-primary: #ffffff;
+            --text-secondary: #00f7ff;
+            --bg-dark: #0a0a0a;
+            --bg-darker: #050505;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism 效果 */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            box-shadow: 
+                0 0 20px rgba(0, 247, 255, 0.1),
+                inset 0 0 20px rgba(0, 247, 255, 0.05);
+        }
+
+        /* 主容器 - RWD */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 標題 */
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dim));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 20px rgba(0, 247, 255, 0.5);
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: var(--neon-blue-dim);
+            font-size: 1rem;
+        }
+
+        /* 主畫面區域 - Camera + Info */
+        .main-area {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 25px;
+        }
+
+        @media (max-width: 968px) {
+            .main-area {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 摄影機容器 */
+        .camera-container {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: var(--bg-darker);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--glass-border);
+        }
+
+        .camera-container canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Air Piano 模式指示 */
+        .piano-mode-indicator {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            padding: 8px 15px;
+            background: var(--glass-bg);
+            border: 1px solid var(--neon-blue);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--neon-blue);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .piano-mode-indicator .toggle-switch {
+            width: 40px;
+            height: 20px;
+            background: var(--bg-darker);
+            border-radius: 10px;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+        }
+
+        .piano-mode-indicator .toggle-switch::after {
+            content: '';
+            width: 16px;
+            height: 16px;
+            background: var(--neon-blue);
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease;
+        }
+
+        .piano-mode-indicator.active .toggle-switch::after {
+            transform: translateX(20px);
+        }
+
+        /* Air Piano 鍵盤視覺化 */
+        .piano-keys {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 200px;
+            display: none; /* 默認隱藏 */
+            pointer-events: none;
+        }
+
+        .piano-mode-indicator.active ~ .piano-keys {
+            display: flex;
+        }
+
+        .piano-key {
+            flex: 1;
+            background: rgba(0, 247, 255, 0.05);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neon-blue-dim);
+            font-weight: bold;
+            transition: background 0.2s ease;
+        }
+
+        .piano-key:last-child {
+            border-right: none;
+        }
+
+        .piano-key.active {
+            background: rgba(0, 247, 255, 0.3);
+            color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+        }
+
+        /* 信息面板 */
+        .info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-card {
+            glass-panel;
+            padding: 20px;
+        }
+
+        /* 手勢顯示卡片 */
+        .gesture-card {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .gesture-icon {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .gesture-name {
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .gesture-subtitle {
+            color: var(--neon-blue-dim);
+            font-size: 0.9rem;
+        }
+
+        /* 狀態列 */
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        @media (max-width: 968px) {
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-item {
+            glass-panel;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.85rem;
+            color: var(--neon-blue-dim);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .status-value {
+            font-size: 1.2rem;
+            color: var(--neon-blue);
+            font-weight: bold;
+        }
+
+        /* 進度條 */
+        .confidence-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-darker);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-dim));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        /* 錯誤訊息 */
+        .error-message {
+            glass-panel;
+            padding: 20px;
+            text-align: center;
+            color: #ff6b6b;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* 按鈕 */
+        .btn {
+            glass-panel;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            color: var(--neon-blue);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: var(--glass-bg);
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* 音樂符號 */
+        .musical-note {
+            color: var(--neon-blue);
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* 霓虹光效果 */
+        .neon-glow {
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+        }
+
+        /* 隱藏元素 */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading 狀態 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--glass-border);
+            border-radius: 50%;
+            border-top-color: var(--neon-blue);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- ============================================
+         HTML 結構
+         ============================================ -->
+    
+    <div class="container">
+        <!-- 標題 -->
+        <header>
+            <h1>🎹 Hand Gesture & Air Piano</h1>
+            <p>使用 MediaPipe Hands 辨識手勢與演奏空中鋼琴</p>
+        </header>
+
+        <!-- 錯誤訊息 -->
+        <div id="errorMessage" class="error-message">
+            <h3>⚠️ 相機權限被拒絕</h3>
+            <p>請允許網站使用您的相機才能啟用手勢辨識功能。</p>
+            <button id="retryCamera" class="btn">
+                <span>🔄 重新嘗試</span>
+            </button>
+        </div>
+
+        <!-- 主要區域 -->
+        <div class="main-area">
+            <!-- 相機容器 -->
+            <div class="camera-container">
+                <!-- MediaPipe 繪製用 Canvas -->
+                <canvas id="output"></canvas>
+                
+                <!-- Air Piano 模式指示器 -->
+                <div id="pianoModeIndicator" class="piano-mode-indicator">
+                    <span>🎹 Air Piano</span>
+                    <div id="pianoToggle" class="toggle-switch"></div>
+                </div>
+                
+                <!-- Air Piano 鍵盤 -->
+                <div id="pianoKeys" class="piano-keys">
+                    <div class="piano-key" data-note="Do">Do</div>
+                    <div class="piano-key" data-note="Re">Re</div>
+                    <div class="piano-key" data-note="Mi">Mi</div>
+                    <div class="piano-key" data-note="Fa">Fa</div>
+                    <div class="piano-key" data-note="Sol">Sol</div>
+                    <div class="piano-key" data-note="La">La</div>
+                    <div class="piano-key" data-note="Si">Si</div>
+                    <div class="piano-key" data-note="Do2">Do</div>
+                </div>
+            </div>
+
+            <!-- 信息面板 -->
+            <div class="info-panel">
+                <!-- 手勢卡片 -->
+                <div class="info-card gesture-card">
+                    <div id="gestureIcon" class="gesture-icon">👋</div>
+                    <div id="gestureName" class="gesture-name">待辨識...</div>
+                    <div class="gesture-subtitle">Hand Gesture Detection</div>
+                </div>
+
+                <!-- 狀態網格 -->
+                <div class="status-grid">
+                    <!-- FPS -->
+                    <div class="status-item">
+                        <div class="status-label">FPS</div>
+                        <div id="fpsValue" class="status-value">--</div>
+                    </div>
+                    
+                    <!-- 音效 -->
+                    <div class="status-item">
+                        <div class="status-label">音效 <span class="musical-note">🎵</span></div>
+                        <div id="soundName" class="status-value">--</div>
+                    </div>
+                    
+                    <!-- 置信度 -->
+                    <div class="status-item">
+                        <div class="status-label">置信度</div>
+                        <div id="confidenceValue" class="status-value">0%</div>
+                        <div class="confidence-bar">
+                            <div id="confidenceFill" class="confidence-fill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 模式 -->
+                    <div class="status-item">
+                        <div class="status-label">模式</div>
+                        <div id="modeName" class="status-value">手勢</div>
+                    </div>
+                </div>
+
+                <!-- 手勢列表 -->
+                <div class="info-card">
+                    <div class="status-label">支援手勢</div>
+                    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span class="gesture-tag">👆 1指</span>
+                        <span class="gesture-tag">✌️ 2指</span>
+                        <span class="gesture-tag">🤟 3指</span>
+                        <span class="gesture-tag">🖖️ 4指</span>
+                        <span class="gesture-tag">🙌 5指</span>
+                        <span class="gesture-tag">👊 握拳</span>
+                        <span class="gesture-tag">👌 OK</span>
+                        <span class="gesture-tag">👍 讚</span>
+                        <span class="gesture-tag">👎 倒讚</span>
+                    </div>
+                </div>
+
+                <!-- Air Piano 顯示 -->
+                <div class="info-card" id="pianoInfoCard" style="display: none;">
+                    <div class="status-label">Air Piano <span class="musical-note">🎶</span></div>
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                            <span style="color: var(--neon-blue-dim); font-size: 0.85rem;">左手</span>
+                            <span style="color: var(--neon-blue-dim); font-size: 0.85rem;">右手</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <div id="leftHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div>
+                            <div id="rightHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">
+                        使用食指指尖觸發音符
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         隱藏的 Audio 元素 (預先載入音效)
+         ============================================ -->
+    <div id="audioElements" style="display: none;">
+        <!-- 手勢音效 -->
+        <audio id="sound_one" src="index.mp3" preload="auto"></audio>
+        <audio id="sound_two" src="peace.mp3" preload="auto"></audio>
+        <audio id="sound_three" src="three.mp3" preload="auto"></audio>
+        <audio id="sound_four" src="four.mp3" preload="auto"></audio>
+        <audio id="sound_five" src="five.mp3" preload="auto"></audio>
+        <audio id="sound_fist" src="fist.mp3" preload="auto"></audio>
+        <audio id="sound_ok" src="ok.mp3" preload="auto"></audio>
+        <audio id="sound_thumbup" src="thumbup.mp3" preload="auto"></audio>
+        <audio id="sound_thumbdown" src="thumbdown.mp3" preload="auto"></audio>
+        
+        <!-- Air Piano 音符 -->
+        <audio id="piano_Do" src="piano_do.mp3" preload="auto"></audio>
+        <audio id="piano_Re" src="piano_re.mp3" preload="auto"></audio>
+        <audio id="piano_Mi" src="piano_mi.mp3" preload="auto"></audio>
+        <audio id="piano_Fa" src="piano_fa.mp3" preload="auto"></audio>
+        <audio id="piano_Sol" src="piano_sol.mp3" preload="auto"></audio>
+        <audio id="piano_La" src="piano_la.mp3" preload="auto"></audio>
+        <audio id="piano_Si" src="piano_si.mp3" preload="auto"></audio>
+        <audio id="piano_Do2" src="piano_do2.mp3" preload="auto"></audio>
+    </div>
+
+    <!-- ============================================
+         JavaScript - MediaPipe Hands + 手勢辨識 + Air Piano
+         ============================================ -->
+    
+    <script>
+        // ============================================
+        // 全局常數與配置
+        // ============================================
+        
+        /**
+         * 手勢類型定義
+         * 每個手勢對應唯一的 ID 及顯示資訊
+         */
+        const GESTURES = {
+            UNKNOWN: { id: 'unknown', name: '未知', icon: '❓', sound: null },
+            ONE: { id: 'one', name: '1 指', icon: '👆', sound: 'one' },
+            TWO: { id: 'two', name: '2 指', icon: '✌️', sound: 'two' },
+            THREE: { id: 'three', name: '3 指', icon: '🤟', sound: 'three' },
+            FOUR: { id: 'four', name: '4 指', icon: '🖖️', sound: 'four' },
+            FIVE: { id: 'five', name: '5 指', icon: '🙌', sound: 'five' },
+            FIST: { id: 'fist', name: '握拳', icon: '👊', sound: 'fist' },
+            OK: { id: 'ok', name: 'OK', icon: '👌', sound: 'ok' },
+            THUMB_UP: { id: 'thumbup', name: '讚', icon: '👍', sound: 'thumbup' },
+            THUMB_DOWN: { id: 'thumbdown', name: '倒讚', icon: '👎', sound: 'thumbdown' }
+        };
+
+        /**
+         * 手勢音效映射
+         * 方便未來擴充新手勢
+         */
+        const gestureSounds = {
+            one: 'sound_one',
+            two: 'sound_two',
+            three: 'sound_three',
+            four: 'sound_four',
+            five: 'sound_five',
+            fist: 'sound_fist',
+            ok: 'sound_ok',
+            thumbup: 'sound_thumbup',
+            thumbdown: 'sound_thumbdown'
+        };
+
+        /**
+         * Air Piano 音符映射
+         * 8 個區域對應音符
+         */
+        const PIANO_NOTES = ['Do', 'Re', 'Mi', 'Fa', 'Sol', 'La', 'Si', 'Do2'];
+        const PIANO_SOUNDS = {
+            Do: 'piano_Do',
+            Re: 'piano_Re',
+            Mi: 'piano_Mi',
+            Fa: 'piano_Fa',
+            Sol: 'piano_Sol',
+            La: 'piano_La',
+            Si: 'piano_Si',
+            Do2: 'piano_Do2'
+        };
+
+        // ============================================
+        // 配置參數
+        // ============================================
+        
+        const CONFIG = {
+            // 手勢穩定性: 需要連續 N 個 frame 才判定成功
+            GESTURE_STABILITY_FRAMES: 5,
+            
+            // 音效 cooldown (毫秒)
+            SOUND_COOLDOWN: 1000,
+            
+            // Air Piano 指尖防抖延遲 (毫秒)
+            PIANO_DEBOUNCE: 150,
+            
+            // Air Piano cooldown (毫秒)
+            PIANO_COOLDOWN: 100,
+            
+            // 手指伸直閾值 (角度)
+            FINGER_EXTENDED_THRESHOLD: 160, // 大於此角度視為伸直
+            FINGER_FLEXED_THRESHOLD: 40,    // 小於此角度視為彎曲
+            
+            // OK 手勢閾值 (食指與拇指距離)
+            OK_DISTANCE_THRESHOLD: 0.05,
+            
+            // 拇指向上/向下閾值
+            THUMB_UP_THRESHOLD: 0.3,
+            THUMB_DOWN_THRESHOLD: -0.3
+        };
+
+        // ============================================
+        // 全局狀態變數
+        // ============================================
+        
+        let camera = null;           // 相機實例
+        let hands = null;            // MediaPipe Hands 實例
+        let canvasCtx = null;        // Canvas 繪製上下文
+        let canvasElement = null;    // Canvas 元素
+        let results = null;          // 偵測結果
+        let lastVideoTime = -1;      // 上次處理帧時間
+        let isPianoMode = false;     // 是否啟用 Air Piano 模式
+        
+        // 手勢辨識狀態
+        let currentGesture = GESTURES.UNKNOWN;  // 當前手勢
+        let gestureStabilityCounter = 0;       // 穩定性計數器
+        let lastGesture = null;                 // 上一次成功的手勢
+        let lastSoundPlayed = null;             // 上一次播放的音效
+        let soundCooldownEnd = 0;               // 音效 cooldown 結束時間
+        
+        // Air Piano 狀態
+        let leftHandActiveKey = null;          // 左手激活的鍵
+        let rightHandActiveKey = null;         // 右手激活的鍵
+        let lastPianoPlayTime = { left: 0, right: 0 }; // 上次播放時間
+        let pianoDebounceEnd = { left: 0, right: 0 };  // 防抖結束時間
+        
+        // FPS 計算
+        let frameCount = 0;
+        let fps = 0;
+        let lastFpsUpdate = performance.now();
+
+        // ============================================
+        // 初始化函數
+        // ============================================
+        
+        /**
+         * 初始化應用程式
+         * 載入 MediaPipe Hands, 設定相機, 開始偵測
+         */
+        async function init() {
+            console.log('🚀 初始化應用程式...');
+            
+            // 初始化 UI
+            initUI();
+            
+            // 初始化 MediaPipe Hands
+            await initMediaPipe();
+            
+            // 設定相機
+            await setupCamera();
+            
+            // 開始偵測
+            startDetection();
+            
+            console.log('✅ 初始化完成!');
+        }
+
+        /**
+         * 初始化 UI 事件監聽
+         */
+        function initUI() {
+            console.log('🎨 初始化 UI...');
+            
+            // 獲取 Canvas 元素
+            canvasElement = document.getElementById('output');
+            canvasCtx = canvasElement.getContext('2d');
+            
+            // Air Piano 模式切換
+            const pianoToggle = document.getElementById('pianoToggle');
+            const pianoModeIndicator = document.getElementById('pianoModeIndicator');
+            const pianoInfoCard = document.getElementById('pianoInfoCard');
+            
+            pianoToggle.addEventListener('click', () => {
+                isPianoMode = !isPianoMode;
+                pianoModeIndicator.classList.toggle('active', isPianoMode);
+                pianoInfoCard.style.display = isPianoMode ? 'block' : 'none';
+                
+                // 切換模式時重置手勢顯示
+                updateGestureDisplay(GESTURES.UNKNOWN, 0);
+                updateModeName();
+                
+                console.log(`🎹 模式切換: ${isPianoMode ? 'Air Piano' : '手勢辨識'}`);
+            });
+            
+            // 重新嘗試相機按鈕
+            const retryCamera = document.getElementById('retryCamera');
+            retryCamera.addEventListener('click', async () => {
+                document.getElementById('errorMessage').classList.remove('show');
+                await setupCamera();
+            });
+        }
+
+        /**
+         * 初始化 MediaPipe Hands
+         * 從 CDN 轉入並初始化 Hands 模型
+         */
+        async function initMediaPipe() {
+            console.log('🤖 初始化 MediaPipe Hands...');
+            
+            try {
+                // 從 CDN 轉入 MediaPipe Hands
+                const handsModule = await import(
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.10.4/hands.min.js'
+                );
+                
+                // 從 CDN 轉入 Camera Utils
+                const cameraUtils = await import(
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.16/camera_utils.min.js'
+                );
+                
+                // 從 CDN 轉入 Drawing Utils
+                const drawingUtils = await import(
+                    'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.0/drawing_utils.min.js'
+                );
+                
+                // 將全局變數指向轉入的模組
+                window.Hands = handsModule.Hands;
+                window.Camera = cameraUtils.Camera;
+                window.drawingUtils = drawingUtils;
+                
+                // 創建 Hands 實例
+                hands = new Hands({
+                    locateFile: (file) => {
+                        // MediaPipe 模型檔案位置
+                        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.10.4/${file}`;
+                    }
+                });
+                
+                // 設定 Hands 解析器
+                hands.setOptions({
+                    maxNumHands: 2,           // 最多偵測 2 隻手
+                    modelComplexity: 1,       // 模型複雜度 (0: 輕量, 1: 完整)
+                    minDetectionConfidence: 0.5, // 最小偵測置信度
+                    minTrackingConfidence: 0.5   // 最小追蹤置信度
+                });
+                
+                // 設定偵測結果回呼
+                hands.onResults((detectedResults) => {
+                    results = detectedResults;
+                });
+                
+                console.log('✅ MediaPipe Hands 初始化成功!');
+                
+            } catch (error) {
+                console.error('❌ MediaPipe 初始化失敗:', error);
+                showError('MediaPipe 加載失敗，請刷新頁面重試。');
+            }
+        }
+
+        /**
+         * 設定相機
+         * 取得相機權限並啟動視訊串流
+         */
+        async function setupCamera() {
+            console.log('📹 設定相機...');
+            
+            try {
+                // 檢查是否已有相機實例
+                if (camera) {
+                    camera.stop();
+                    camera = null;
+                }
+                
+                // 取得相機權限
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'user',  // 使用前置相機
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: false
+                });
+                
+                // 創建相機實例
+                camera = new Camera(stream, {
+                    onFrame: async () => {
+                        // 每個帧都呼叫偵測
+                        await hands.send({ image: stream });
+                    },
+                    width: 1280,
+                    height: 720
+                });
+                
+                // 將相機串流顯示在視訊元素上
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                
+                // 設定 Canvas 大小
+                resizeCanvas();
+                
+                // 隱藏錯誤訊息
+                document.getElementById('errorMessage').classList.remove('show');
+                
+                console.log('✅ 相機設定成功!');
+                
+            } catch (error) {
+                console.error('❌ 相機權限被拒絕:', error);
+                showError('相機權限被拒絕，請允許網站使用相機。');
+            }
+        }
+
+        /**
+         * 顯示錯誤訊息
+         * @param {string} message - 錯誤訊息
+         */
+        function showError(message) {
+            const errorElement = document.getElementById('errorMessage');
+            errorElement.querySelector('p').textContent = message;
+            errorElement.classList.add('show');
+            console.error('❌ 錯誤:', message);
+        }
+
+        /**
+         * 調整 Canvas 大小以匹配相機
+         */
+        function resizeCanvas() {
+            if (camera && camera.video) {
+                const video = camera.video;
+                canvasElement.width = video.videoWidth;
+                canvasElement.height = video.videoHeight;
+            } else {
+                // 默認大小
+                canvasElement.width = 1280;
+                canvasElement.height = 720;
+            }
+        }
+
+        // ============================================
+        // 手勢辨識函數
+        // ============================================
+        
+        /**
+         * 開始手勢偵測
+         * 每個帧處理偵測結果
+         */
+        function startDetection() {
+            console.log('🔍 開始手勢偵測...');
+            
+            // 使用 requestAnimationFrame 達成 60 FPS
+            function detectFrame(timestamp) {
+                // 計算 FPS
+                frameCount++;
+                if (timestamp - lastFpsUpdate >= 1000) {
+                    fps = Math.round((frameCount * 1000) / (timestamp - lastFpsUpdate));
+                    frameCount = 0;
+                    lastFpsUpdate = timestamp;
+                    document.getElementById('fpsValue').textContent = fps;
+                }
+                
+                // 繪製相機影像
+                drawCameraFrame();
+                
+                // 如果有偵測結果
+                if (results && results.multiHandLandmarks) {
+                    // 繪製手部地標和骨架
+                    drawHandLandmarks(results.multiHandLandmarks);
+                    
+                    // 處理手勢辨識或 Air Piano
+                    if (isPianoMode) {
+                        processAirPiano(results.multiHandLandmarks);
+                    } else {
+                        processGestureRecognition(results.multiHandLandmarks);
+                    }
+                } else {
+                    // 沒有偵測到手，重置狀態
+                    if (!isPianoMode) {
+                        gestureStabilityCounter = 0;
+                        updateGestureDisplay(GESTURES.UNKNOWN, 0);
+                    }
+                }
+                
+                // 繼續下一帧
+                requestAnimationFrame(detectFrame);
+            }
+            
+            // 開始第一個帧
+            requestAnimationFrame(detectFrame);
+        }
+
+        /**
+         * 繪製相機影像
+         */
+        function drawCameraFrame() {
+            if (camera && camera.video) {
+                const video = camera.video;
+                canvasCtx.save();
+                
+                // 繪製相機影像 (鏡像)
+                canvasCtx.scale(-1, 1);
+                canvasCtx.translate(-canvasElement.width, 0);
+                canvasCtx.drawImage(
+                    video,
+                    0, 0,
+                    canvasElement.width, canvasElement.height
+                );
+                
+                canvasCtx.restore();
+            }
+        }
+
+        /**
+         * 繪製手部地標和骨架
+         * @param {Array} multiHandLandmarks - 多手地標陣列
+         */
+        function drawHandLandmarks(multiHandLandmarks) {
+            // 繪製每隻手的地標
+            for (const landmarks of multiHandLandmarks) {
+                // 繪製地標點
+                drawLandmarks(landmarks);
+                
+                // 繪製骨架 (連接地標)
+                drawConnections(landmarks);
+            }
+        }
+
+        /**
+         * 繪製單手的地標點
+         * @param {Array} landmarks - 21 個地標點
+         */
+        function drawLandmarks(landmarks) {
+            const radius = (data) => Math.max(2, Math.min(6, data.from ? data.from.z * -300 : 2));
+            
+            for (const landmark of landmarks) {
+                // 繪製地標點 (霓虹藍)
+                canvasCtx.beginPath();
+                canvasCtx.arc(
+                    landmark.x * canvasElement.width,
+                    landmark.y * canvasElement.height,
+                    radius(landmark),
+                    0, 2 * Math.PI
+                );
+                
+                // 使用漸層填充
+                const gradient = canvasCtx.createRadialGradient(
+                    landmark.x * canvasElement.width,
+                    landmark.y * canvasElement.height,
+                    0,
+                    landmark.x * canvasElement.width,
+                    landmark.y * canvasElement.height,
+                    radius(landmark) * 2
+                );
+                gradient.addColorStop(0, '#00f7ff');
+                gradient.addColorStop(1, '#00a2ff');
+                
+                canvasCtx.fillStyle = gradient;
+                canvasCtx.fill();
+                
+                // 白色邊框
+                canvasCtx.strokeStyle = '#ffffff';
+                canvasCtx.lineWidth = 1;
+                canvasCtx.stroke();
+            }
+        }
+
+        /**
+         * 繪製手部骨架 (連接地標)
+         * @param {Array} landmarks - 21 個地標點
+         */
+        function drawConnections(landmarks) {
+            // MediaPipe Hands 地標索引
+            // 手腕: 0, 拇指: 1-4, 食指: 5-8, 中指: 9-12, 無名指: 13-16, 小指: 17-20
+            
+            // 手腕到拇指
+            drawConnection(landmarks[0], landmarks[1]);
+            drawConnection(landmarks[1], landmarks[2]);
+            drawConnection(landmarks[2], landmarks[3]);
+            drawConnection(landmarks[3], landmarks[4]);
+            
+            // 手腕到食指
+            drawConnection(landmarks[0], landmarks[5]);
+            drawConnection(landmarks[5], landmarks[6]);
+            drawConnection(landmarks[6], landmarks[7]);
+            drawConnection(landmarks[7], landmarks[8]);
+            
+            // 手腕到中指
+            drawConnection(landmarks[0], landmarks[9]);
+            drawConnection(landmarks[9], landmarks[10]);
+            drawConnection(landmarks[10], landmarks[11]);
+            drawConnection(landmarks[11], landmarks[12]);
+            
+            // 手腕到無名指
+            drawConnection(landmarks[0], landmarks[13]);
+            drawConnection(landmarks[13], landmarks[14]);
+            drawConnection(landmarks[14], landmarks[15]);
+            drawConnection(landmarks[15], landmarks[16]);
+            
+            // 手腕到小指
+            drawConnection(landmarks[0], landmarks[17]);
+            drawConnection(landmarks[17], landmarks[18]);
+            drawConnection(landmarks[18], landmarks[19]);
+            drawConnection(landmarks[19], landmarks[20]);
+            
+            // 手指關節連接
+            drawConnection(landmarks[5], landmarks[9]);
+            drawConnection(landmarks[9], landmarks[13]);
+            drawConnection(landmarks[13], landmarks[17]);
+        }
+
+        /**
+         * 繪製兩點之間的連接線
+         * @param {Object} point1 - 起點
+         * @param {Object} point2 - 終點
+         */
+        function drawConnection(point1, point2) {
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(
+                point1.x * canvasElement.width,
+                point1.y * canvasElement.height
+            );
+            canvasCtx.lineTo(
+                point2.x * canvasElement.width,
+                point2.y * canvasElement.height
+            );
+            
+            // 使用霓虹藍顏色
+            canvasCtx.strokeStyle = '#00f7ff';
+            canvasCtx.lineWidth = 2;
+            canvasCtx.lineCap = 'round';
+            canvasCtx.stroke();
+        }
+
+        // ============================================
+        // 手勢辨識邏輯
+        // ============================================
+        
+        /**
+         * 處理手勢辨識
+         * @param {Array} multiHandLandmarks - 多手地標陣列
+         */
+        function processGestureRecognition(multiHandLandmarks) {
+            // 取第一隻手進行辨識 (最多偵測 2 隻手，但手勢辨識只用第一隻)
+            if (multiHandLandmarks.length === 0) {
+                gestureStabilityCounter = 0;
+                updateGestureDisplay(GESTURES.UNKNOWN, 0);
+                return;
+            }
+            
+            const landmarks = multiHandLandmarks[0];
+            const gesture = recognizeGesture(landmarks);
+            
+            // 如果辨識到相同手勢，增加穩定性計數
+            if (gesture === currentGesture) {
+                gestureStabilityCounter++;
+            } else {
+                // 手勢改變，重置計數
+                gestureStabilityCounter = 1;
+                currentGesture = gesture;
+            }
+            
+            // 計算置信度 (基於穩定性)
+            const confidence = Math.min(100, gestureStabilityCounter * 20);
+            
+            // 更新顯示
+            updateGestureDisplay(gesture, confidence);
+            
+            // 如果穩定性足夠且手勢改變，播放音效
+            if (gestureStabilityCounter >= CONFIG.GESTURE_STABILITY_FRAMES && 
+                gesture.id !== 'unknown' &&
+                gesture !== lastGesture) {
+                
+                playGestureSound(gesture);
+                lastGesture = gesture;
+            }
+        }
+
+        /**
+         * 辨識手勢
+         * @param {Array} landmarks - 21 個手部地標
+         * @returns {Object} 手勢物件
+         */
+        function recognizeGesture(landmarks) {
+            // 取得手指狀態 (伸直或彎曲)
+            const fingers = getFingerStates(landmarks);
+            
+            // 計算伸直的手指數量
+            const extendedFingers = fingers.filter(f => f === 'extended').length;
+            
+            // 特殊手勢檢測 (優先判斷)
+            
+            // 1. OK 手勢 (拇指和食指接觸，其他手指伸直)
+            if (isOKGesture(landmarks, fingers)) {
+                return GESTURES.OK;
+            }
+            
+            // 2. 握拳 (所有手指都彎曲)
+            if (extendedFingers === 0) {
+                return GESTURES.FIST;
+            }
+            
+            // 3. 大拇指向上 (讚)
+            if (isThumbUp(landmarks, fingers)) {
+                return GESTURES.THUMB_UP;
+            }
+            
+            // 4. 大拇指向下 (倒讚)
+            if (isThumbDown(landmarks, fingers)) {
+                return GESTURES.THUMB_DOWN;
+            }
+            
+            // 5. 根據伸直手指數量判斷
+            switch (extendedFingers) {
+                case 1:
+                    // 如果只有食指伸直
+                    if (fingers[1] === 'extended' && fingers[0] === 'flexed') {
+                        return GESTURES.ONE;
+                    }
+                    break;
+                case 2:
+                    // 如果是食指+中指
+                    if (fingers[1] === 'extended' && fingers[2] === 'extended' &&
+                        fingers[0] === 'flexed' && fingers[3] === 'flexed' && fingers[4] === 'flexed') {
+                        return GESTURES.TWO;
+                    }
+                    break;
+                case 3:
+                    return GESTURES.THREE;
+                case 4:
+                    return GESTURES.FOUR;
+                case 5:
+                    return GESTURES.FIVE;
+            }
+            
+            // 如果以上都不符合，返回未知
+            return GESTURES.UNKNOWN;
+        }
+
+        /**
+         * 取得各手指狀態 (伸直或彎曲)
+         * @param {Array} landmarks - 21 個手部地標
+         * @returns {Array} 手指狀態陣列 [拇指, 食指, 中指, 無名指, 小指]
+         */
+        function getFingerStates(landmarks) {
+            const states = [];
+            
+            // 拇指 (使用不同的判斷邏輯)
+            const thumbAngle = calculateAngle(
+                landmarks[0], // 手腕
+                landmarks[1], // 拇指根部
+                landmarks[2]  // 拇指第一關節
+            );
+            states.push(thumbAngle > 120 ? 'extended' : 'flexed');
+            
+            // 食指 (索引 5-8)
+            states.push(getFingerState(landmarks, 5));
+            
+            // 中指 (索引 9-12)
+            states.push(getFingerState(landmarks, 9));
+            
+            // 無名指 (索引 13-16)
+            states.push(getFingerState(landmarks, 13));
+            
+            // 小指 (索引 17-20)
+            states.push(getFingerState(landmarks, 17));
+            
+            return states;
+        }
+
+        /**
+         * 判斷單根手指 (食指、中指、無名指、小指) 是否伸直
+         * @param {Array} landmarks - 所有地標
+         * @param {number} baseIndex - 手指根部地標索引
+         * @returns {string} 'extended' 或 'flexed'
+         */
+        function getFingerState(landmarks, baseIndex) {
+            // 計算指尖關節角度
+            const angle = calculateAngle(
+                landmarks[baseIndex],     // 根部
+                landmarks[baseIndex + 1], // 第一關節
+                landmarks[baseIndex + 2]  // 第二關節
+            );
+            
+            // 如果角度大於閾值，視為伸直
+            return angle > CONFIG.FINGER_EXTENDED_THRESHOLD ? 'extended' : 'flexed';
+        }
+
+        /**
+         * 計算三點的夾角 (度數)
+         * @param {Object} p1 - 第一點
+         * @param {Object} p2 - 第二點 (頂點)
+         * @param {Object} p3 - 第三點
+         * @returns {number} 夾角 (度數)
+         */
+        function calculateAngle(p1, p2, p3) {
+            // 向量 1 (p2 -> p1)
+            const v1 = { x: p1.x - p2.x, y: p1.y - p2.y };
+            // 向量 2 (p2 -> p3)
+            const v2 = { x: p3.x - p2.x, y: p3.y - p2.y };
+            
+            // 計算點積
+            const dot = v1.x * v2.x + v1.y * v2.y;
+            
+            // 計算向量長度
+            const len1 = Math.sqrt(v1.x * v1.x + v1.y * v1.y);
+            const len2 = Math.sqrt(v2.x * v2.x + v2.y * v2.y);
+            
+            // 避免除以零
+            if (len1 === 0 || len2 === 0) return 0;
+            
+            // 計算夾角 (弧度)
+            const angleRad = Math.acos(dot / (len1 * len2));
+            
+            // 轉換為度數
+            return angleRad * (180 / Math.PI);
+        }
+
+        /**
+         * 判斷是否為 OK 手勢
+         * @param {Array} landmarks - 手部地標
+         * @param {Array} fingers - 手指狀態
+         * @returns {boolean}
+         */
+        function isOKGesture(landmarks, fingers) {
+            // 拇指和食指需要接近
+            const thumbTip = landmarks[4];  // 拇指指尖
+            const indexTip = landmarks[8];  // 食指指尖
+            
+            const distance = Math.sqrt(
+                Math.pow(thumbTip.x - indexTip.x, 2) +
+                Math.pow(thumbTip.y - indexTip.y, 2)
+            );
+            
+            // 如果拇指和食指距離很近
+            const isThumbIndexClose = distance < CONFIG.OK_DISTANCE_THRESHOLD;
+            
+            // 其他手指需要伸直
+            const otherFingersExtended = 
+                fingers[2] === 'extended' && // 中指
+                fingers[3] === 'extended' && // 無名指
+                fingers[4] === 'extended';   // 小指
+            
+            return isThumbIndexClose && otherFingersExtended;
+        }
+
+        /**
+         * 判斷是否為大拇指向上 (讚)
+         * @param {Array} landmarks - 手部地標
+         * @param {Array} fingers - 手指狀態
+         * @returns {boolean}
+         */
+        function isThumbUp(landmarks, fingers) {
+            // 拇指指尖位置
+            const thumbTip = landmarks[4];
+            const wrist = landmarks[0];
+            
+            // 如果拇指指尖在手腕上方 (y 較小)
+            const thumbAboveWrist = thumbTip.y < wrist.y - CONFIG.THUMB_UP_THRESHOLD;
+            
+            // 其他手指需要彎曲或收起
+            const otherFingersNotExtended = 
+                fingers[1] === 'flexed' && // 食指
+                fingers[2] === 'flexed' && // 中指
+                fingers[3] === 'flexed' && // 無名指
+                fingers[4] === 'flexed';   // 小指
+            
+            return thumbAboveWrist && otherFingersNotExtended;
+        }
+
+        /**
+         * 判斷是否為大拇指向下 (倒讚)
+         * @param {Array} landmarks - 手部地標
+         * @param {Array} fingers - 手指狀態
+         * @returns {boolean}
+         */
+        function isThumbDown(landmarks, fingers) {
+            // 拇指指尖位置
+            const thumbTip = landmarks[4];
+            const wrist = landmarks[0];
+            
+            // 如果拇指指尖在手腕下方 (y 較大)
+            const thumbBelowWrist = thumbTip.y > wrist.y + CONFIG.THUMB_DOWN_THRESHOLD;
+            
+            // 其他手指需要彎曲或收起
+            const otherFingersNotExtended = 
+                fingers[1] === 'flexed' && // 食指
+                fingers[2] === 'flexed' && // 中指
+                fingers[3] === 'flexed' && // 無名指
+                fingers[4] === 'flexed';   // 小指
+            
+            return thumbBelowWrist && otherFingersNotExtended;
+        }
+
+        // ============================================
+        // Air Piano 邏輯
+        // ============================================
+        
+        /**
+         * 處理 Air Piano 模式
+         * @param {Array} multiHandLandmarks - 多手地標陣列
+         */
+        function processAirPiano(multiHandLandmarks) {
+            // 重置鍵盤激活狀態
+            leftHandActiveKey = null;
+            rightHandActiveKey = null;
+            
+            // 處理每隻手
+            for (const landmarks of multiHandLandmarks) {
+                const handIndex = multiHandLandmarks.indexOf(landmarks);
+                const isLeftHand = handIndex === 0; // 假設第一隻手是左手
+                
+                // 取得食指指尖 (Landmark 8)
+                const indexFingertip = landmarks[8];
+                
+                // 判斷指尖在哪個區域
+                const keyIndex = getPianoKeyIndex(indexFingertip.x);
+                
+                if (keyIndex !== -1) {
+                    const note = PIANO_NOTES[keyIndex];
+                    const handKey = isLeftHand ? 'left' : 'right';
+                    const currentTime = performance.now();
+                    
+                    // 檢查防抖和 cooldown
+                    if (currentTime > pianoDebounceEnd[handKey] && 
+                        currentTime > lastPianoPlayTime[handKey] + CONFIG.PIANO_COOLDOWN) {
+                        
+                        // 激活對應的鍵
+                        if (isLeftHand) {
+                            leftHandActiveKey = note;
+                        } else {
+                            rightHandActiveKey = note;
+                        }
+                        
+                        //播放音符
+                        playPianoNote(note, handKey);
+                        
+                        // 更新防抖時間
+                        pianoDebounceEnd[handKey] = currentTime + CONFIG.PIANO_DEBOUNCE;
+                        lastPianoPlayTime[handKey] = currentTime;
+                    }
+                }
+            }
+            
+            // 更新 UI
+            updatePianoDisplay();
+        }
+
+        /**
+         * 判斷指尖在哪個鍵盤區域
+         * @param {number} x - 歸一化的 x 坐標 (0-1)
+         * @returns {number} 鍵盤索引 (0-7), 或 -1 (不在任何區域)
+         */
+        function getPianoKeyIndex(x) {
+            // 8 個區域，每個區域寬度 = 1/8
+            const keyWidth = 1 / PIANO_NOTES.length;
+            
+            for (let i = 0; i < PIANO_NOTES.length; i++) {
+                const start = i * keyWidth;
+                const end = (i + 1) * keyWidth;
+                
+                if (x >= start && x < end) {
+                    return i;
+                }
+            }
+            
+            return -1;
+        }
+
+        /**
+         * 播放鋼琴音符
+         * @param {string} note - 音符名稱 (Do, Re, Mi, ...)
+         * @param {string} handKey - 手的鍵 ('left' 或 'right')
+         */
+        function playPianoNote(note, handKey) {
+            const soundId = PIANO_SOUNDS[note];
+            const audioElement = document.getElementById(soundId);
+            
+            if (audioElement) {
+                try {
+                    // 使用 WebAudio API 實現低延遲播放
+                    playAudioWithWebAudio(audioElement);
+                    
+                    // 更新音效名稱顯示
+                    updateSoundName(`${note} (${handKey === 'left' ? '左' : '右'}手)`);
+                    
+                } catch (error) {
+                    console.warn(`⚠️ 音效檔案不存在: ${soundId}`);
+                    console.warn('Sound not found:', soundId);
+                }
+            } else {
+                console.warn(`⚠️ 音效檔案不存在: ${soundId}`);
+                console.warn('Sound not found:', soundId);
+            }
+        }
+
+        // ============================================
+        // 音效播放函數
+        // ============================================
+        
+        /**
+         * 播放手勢音效
+         * @param {Object} gesture - 手勢物件
+         */
+        function playGestureSound(gesture) {
+            const currentTime = performance.now();
+            
+            // 檢查 cooldown
+            if (currentTime < soundCooldownEnd) {
+                console.log('⏳ 音效 cooldown 中，跳過播放');
+                return;
+            }
+            
+            const soundId = gestureSounds[gesture.id];
+            const audioElement = document.getElementById(soundId);
+            
+            if (audioElement) {
+                try {
+                    // 使用 WebAudio API 實現低延遲播放
+                    playAudioWithWebAudio(audioElement);
+                    
+                    // 更新音效名稱
+                    updateSoundName(gesture.name);
+                    
+                    // 設定 cooldown
+                    soundCooldownEnd = currentTime + CONFIG.SOUND_COOLDOWN;
+                    lastSoundPlayed = soundId;
+                    
+                } catch (error) {
+                    console.warn(`⚠️ 音效檔案不存在: ${soundId}`);
+                    console.warn('Sound not found:', soundId);
+                }
+            } else {
+                console.warn(`⚠️ 音效檔案不存在: ${soundId}`);
+                console.warn('Sound not found:', soundId);
+            }
+        }
+
+        /**
+         * 使用 WebAudio API 播放音效 (低延遲)
+         * @param {HTMLAudioElement} audioElement - Audio 元素
+         */
+        function playAudioWithWebAudio(audioElement) {
+            // 檢查 WebAudio API 是否支援
+            if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+                const audioContext = new (AudioContext || webkitAudioContext)();
+                
+                try {
+                    // 創建音源
+                    const source = audioContext.createMediaElementSource(audioElement);
+                    source.connect(audioContext.destination);
+                    
+                    // 重置 audio 位置到起點
+                    audioElement.currentTime = 0;
+                    
+                    // 使用 Promise 方式播放以避免多次點擊問題
+                    const playPromise = audioElement.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.warn('音效播放失敗:', error);
+                        });
+                    }
+                    
+                } catch (error) {
+                    console.warn('WebAudio API 玩具失敗，使用傳統方式:', error);
+                    // 降級到傳統播放方式
+                    audioElement.currentTime = 0;
+                    audioElement.play().catch(e => console.warn('傳統播放失敗:', e));
+                }
+            } else {
+                // 不支援 WebAudio API，使用傳統方式
+                audioElement.currentTime = 0;
+                audioElement.play().catch(e => console.warn('音效播放失敗:', e));
+            }
+        }
+
+        // ============================================
+        // UI 更新函數
+        // ============================================
+        
+        /**
+         * 更新手勢顯示
+         * @param {Object} gesture - 手勢物件
+         * @param {number} confidence - 置信度 (0-100)
+         */
+        function updateGestureDisplay(gesture, confidence) {
+            // 更新手勢圖示
+            const gestureIcon = document.getElementById('gestureIcon');
+            gestureIcon.textContent = gesture.icon;
+            
+            // 更新手勢名稱
+            const gestureName = document.getElementById('gestureName');
+            gestureName.textContent = gesture.name;
+            
+            // 更新置信度
+            const confidenceValue = document.getElementById('confidenceValue');
+            confidenceValue.textContent = `${Math.round(confidence)}%`;
+            
+            const confidenceFill = document.getElementById('confidenceFill');
+            confidenceFill.style.width = `${confidence}%`;
+        }
+
+        /**
+         * 更新音效名稱顯示
+         * @param {string} name - 音效名稱
+         */
+        function updateSoundName(name) {
+            const soundNameElement = document.getElementById('soundName');
+            soundNameElement.textContent = name;
+            
+            // 淡出效果
+            soundNameElement.style.opacity = '1';
+            setTimeout(() => {
+                soundNameElement.style.transition = 'opacity 0.5s ease';
+                soundNameElement.style.opacity = '0.7';
+            }, 100);
+        }
+
+        /**
+         * 更新模式名稱顯示
+         */
+        function updateModeName() {
+            const modeNameElement = document.getElementById('modeName');
+            modeNameElement.textContent = isPianoMode ? '空中鋼琴' : '手勢辨識';
+        }
+
+        /**
+         * 更新 Air Piano 顯示
+         */
+        function updatePianoDisplay() {
+            const leftHandNote = document.getElementById('leftHandNote');
+            const rightHandNote = document.getElementById('rightHandNote');
+            
+            leftHandNote.textContent = leftHandActiveKey || '--';
+            rightHandNote.textContent = rightHandActiveKey || '--';
+            
+            // 更新鍵盤視覺狀態
+            const pianoKeys = document.querySelectorAll('.piano-key');
+            pianoKeys.forEach(key => {
+                key.classList.remove('active');
+            });
+            
+            if (leftHandActiveKey) {
+                const leftKeyElement = document.querySelector(`.piano-key[data-note="${leftHandActiveKey}"]`);
+                if (leftKeyElement) {
+                    leftKeyElement.classList.add('active');
+                }
+            }
+            
+            if (rightHandActiveKey) {
+                const rightKeyElement = document.querySelector(`.piano-key[data-note="${rightHandActiveKey}"]`);
+                if (rightKeyElement) {
+                    rightKeyElement.classList.add('active');
+                }
+            }
+        }
+
+        // ============================================
+        // 事件監聽
+        // ============================================
+        
+        // 視窗大小改變時重新調整 Canvas
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+        });
+
+        // 網頁隱藏時停止相機
+        window.addEventListener('beforeunload', () => {
+            if (camera) {
+                camera.stop();
+            }
+            if (hands) {
+                hands.close();
+            }
+        });
+
+        // ============================================
+        // 自動執行
+        // ============================================
+        
+        // 網頁載入完成後自動初始化
+        window.addEventListener('load', init);
+
+        // 也在 DOMContentLoaded 時初始化 (避免某些瀏覽器問題)
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
