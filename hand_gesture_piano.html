@@ -114,19 +114,19 @@
                     </div>
                     <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">使用食指指尖觸發音符</div>
                 </div>
-                <div class="info-card"><div class="status-label">💡 小提示</div><div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">• 請允許相機權限<br>• 保持良好光線<br>• Air Piano: 食指指尖<br>• MP3 不存在時只有視覺效果</div></div>
+                <div class="info-card"><div class="status-label">💡 小提示</div><div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">• 請允許相機權限<br>• 保持良好光線<br>• Air Piano: 食指指尖<br>• 音效由瀏覽器即時合成</div></div>
             </div>
         </div>
-    </div>
-    <div id="audioElements" style="display: none;">
-        <audio id="sound_one" src="index.mp3" preload="auto"></audio><audio id="sound_two" src="peace.mp3" preload="auto"></audio><audio id="sound_three" src="three.mp3" preload="auto"></audio><audio id="sound_four" src="four.mp3" preload="auto"></audio><audio id="sound_five" src="five.mp3" preload="auto"></audio><audio id="sound_fist" src="fist.mp3" preload="auto"></audio><audio id="sound_ok" src="ok.mp3" preload="auto"></audio><audio id="sound_thumbup" src="thumbup.mp3" preload="auto"></audio><audio id="sound_thumbdown" src="thumbdown.mp3" preload="auto"></audio>
-        <audio id="piano_Do" src="piano_do.mp3" preload="auto"></audio><audio id="piano_Re" src="piano_re.mp3" preload="auto"></audio><audio id="piano_Mi" src="piano_mi.mp3" preload="auto"></audio><audio id="piano_Fa" src="piano_fa.mp3" preload="auto"></audio><audio id="piano_Sol" src="piano_sol.mp3" preload="auto"></audio><audio id="piano_La" src="piano_la.mp3" preload="auto"></audio><audio id="piano_Si" src="piano_si.mp3" preload="auto"></audio><audio id="piano_Do2" src="piano_do2.mp3" preload="auto"></audio>
     </div>
     <script>
         // CONFIG
         const G={U:{id:'unknown',name:'未知',icon:'❓'},O:{id:'one',name:'1指',icon:'👆'},T:{id:'two',name:'2指',icon:'✌️'},H:{id:'three',name:'3指',icon:'🤟'},F:{id:'four',name:'4指',icon:'🖖️'},V:{id:'five',name:'5指',icon:'🙌'},S:{id:'fist',name:'握拳',icon:'👊'},K:{id:'ok',name:'OK',icon:'👌'},U2:{id:'thumbup',name:'讚',icon:'👍'},D:{id:'thumbdown',name:'倒讚',icon:'👎'}};
-        const S={o:'sound_one',t:'sound_two',h:'sound_three',f:'sound_four',v:'sound_five',s:'sound_fist',k:'sound_ok',u2:'sound_thumbup',d:'sound_thumbdown'};
-        const P=['Do','Re','Mi','Fa','Sol','La','Si','Do2']; const PS={Do:'piano_Do',Re:'piano_Re',Mi:'piano_Mi',Fa:'piano_Fa',Sol:'piano_Sol',La:'piano_La',Si:'piano_Si',Do2:'piano_Do2'};
+        // 手勢音效頻率 (Hz) — 以 Web Audio API 合成，無需 mp3 檔案
+        const GF={one:392.00,two:440.00,three:493.88,four:523.25,five:587.33,fist:261.63,ok:659.25,thumbup:698.46,thumbdown:196.00};
+        const GN={}; Object.values(G).forEach(x=>GN[x.id]=x.name); // gesture id -> 中文名稱
+        const P=['Do','Re','Mi','Fa','Sol','La','Si','Do2'];
+        // 鋼琴音符頻率 (C 大調 C4~C5)
+        const NF={Do:261.63,Re:293.66,Mi:329.63,Fa:349.23,Sol:392.00,La:440.00,Si:493.88,Do2:523.25};
         const C={ST:5,CD:1000,PD:150,PC:100,FT:160,OK:0.05,TU:-0.3,TD:0.3};
         // STATE
         let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now();
@@ -143,9 +143,13 @@
         function updateSound(n){sn.textContent=n;sn.style.opacity='1';setTimeout(()=>{sn.style.transition='opacity 0.5s';sn.style.opacity='0.7';},100);}
         function updatePiano(){lhn.textContent=lh||'--';rhn.textContent=rh||'--';pks.forEach(k=>k.classList.remove('active'));if(lh){const e=document.querySelector(`.piano-key[data-note="${lh}"]`);if(e)e.classList.add('active');}if(rh){const e=document.querySelector(`.piano-key[data-note="${rh}"]`);if(e)e.classList.add('active');}}
         function resizeCanvas(){if(cam?.video){can.width=cam.video.videoWidth;can.height=cam.video.videoHeight;}else{can.width=1280;can.height=720;}}
-        function play(el){const AC=window.AudioContext||window.webkitAudioContext;if(AC){try{const c=new AC(),s=c.createMediaElementSource(el);s.connect(c.destination);el.currentTime=0;const pp=el.play();if(pp)pp.catch(()=>{});}catch(e){el.currentTime=0;el.play().catch(()=>{});}}else{el.currentTime=0;el.play().catch(()=>{});}}
-        function playSound(gid){const now=performance.now();if(now<cdEnd)return;const el=document.getElementById(S[gid]);if(el){play(el);updateSound(G[gid.substring(0,1).toUpperCase()+'2'||gid.substring(0,1).toUpperCase()]?.name||gid);cdEnd=now+C.CD;}else console.warn('Sound not found:',S[gid]);}
-        function playPiano(note,hk){const el=document.getElementById(PS[note]);if(el){play(el);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}else console.warn('Sound not found:',PS[note]);}
+        // 單一共用 AudioContext（避免每次播放都新建造成資源耗盡）
+        let actx=null;
+        function getCtx(){if(!actx){const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return null;actx=new AC();}if(actx.state==='suspended')actx.resume();return actx;}
+        // 以振盪器合成單一音符；dur 秒數，含淡出包絡避免爆音
+        function tone(freq,dur=0.5,type='triangle'){const c=getCtx();if(!c)return;try{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.02);}catch(e){}}
+        function playSound(gid){const now=performance.now();if(now<cdEnd)return;tone(GF[gid]||440,0.4);updateSound(GN[gid]||gid);cdEnd=now+C.CD;}
+        function playPiano(note,hk){tone(NF[note]||440,0.6);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}
         function calcAngle(p1,p2,p3){const v1={x:p1.x-p2.x,y:p1.y-p2.y},v2={x:p3.x-p2.x,y:p3.y-p2.y},dot=v1.x*v2.x+v1.y*v2.y,l1=Math.sqrt(v1.x*v1.x+v1.y*v1.y),l2=Math.sqrt(v2.x*v2.x+v2.y*v2.y);if(!l1||!l2)return 0;return Math.acos(dot/(l1*l2))*(180/Math.PI);}
         function getFingers(lm){const s=[];s.push(calcAngle(lm[0],lm[1],lm[2])>120?'e':'f');s.push(calcAngle(lm[5],lm[6],lm[7])>C.FT?'e':'f');s.push(calcAngle(lm[9],lm[10],lm[11])>C.FT?'e':'f');s.push(calcAngle(lm[13],lm[14],lm[15])>C.FT?'e':'f');s.push(calcAngle(lm[17],lm[18],lm[19])>C.FT?'e':'f');return s;}
         function recognize(lm){const f=getFingers(lm),ef=f.filter(x=>x==='e').length;if(ef===0)return G.S;const d=Math.sqrt(Math.pow(lm[4].x-lm[8].x,2)+Math.pow(lm[4].y-lm[8].y,2));if(d<C.OK&&f[2]==='e'&&f[3]==='e'&&f[4]==='e')return G.K;if(lm[4].y<lm[0].y+C.TU&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.U2;if(lm[4].y>lm[0].y+C.TD&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.D;switch(ef){case 1:if(f[1]==='e'&&f[0]==='f')return G.O;break;case 2:if(f[1]==='e'&&f[2]==='e'&&f[0]==='f'&&f[3]==='f'&&f[4]==='f')return G.T;break;case 3:return G.H;case 4:return G.F;case 5:return G.V;}return G.U;}
