@@ -1,0 +1,77 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - heading "🎹 Air Piano" [level=1] [ref=e4]
+    - paragraph [ref=e5]: 使用手勢辨識演奏空中鋼琴 - 伸出食指在空中按下即可奏出美妙音樂
+  - generic [ref=e7]:
+    - generic [ref=e8]:
+      - heading "🎹 歡迎使用 Air Piano" [level=2] [ref=e9]
+      - paragraph [ref=e10]: 快速上手指南
+      - generic [ref=e11] [cursor=pointer]: ×
+    - generic [ref=e12]:
+      - generic [ref=e13]:
+        - generic [ref=e14]:
+          - generic [ref=e15]: 📱
+          - generic [ref=e16]: 快速開始
+        - paragraph [ref=e17]: Air Piano 讓您可以使用手部動作在空中演奏鋼琴。只需要打開相機權限，伸出手指並開始演奏！
+      - generic [ref=e18]:
+        - generic [ref=e19]:
+          - generic [ref=e20]: 🎹
+          - generic [ref=e21]: 如何演奏空中鋼琴
+        - generic [ref=e22]:
+          - generic [ref=e23]: 👆
+          - paragraph [ref=e24]: 伸出食指
+          - paragraph [ref=e25]: 在空中快速向下按一次
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - generic [ref=e28]: "1"
+            - generic [ref=e29]:
+              - generic [ref=e30]: 打開 Air Piano 模式
+              - generic [ref=e31]: 點擊左上角的「🎹 Air Piano」按鈕切換到鋼琴模式
+          - generic [ref=e32]:
+            - generic [ref=e33]: "2"
+            - generic [ref=e34]:
+              - generic [ref=e35]: 伸出食指
+              - generic [ref=e36]: 保持食指伸直，其他手指可以彎曲或伸直
+          - generic [ref=e37]:
+            - generic [ref=e38]: "3"
+            - generic [ref=e39]:
+              - generic [ref=e40]: 快速向下按
+              - generic [ref=e41]: 食指指尖快速向下移動，就能觸發對應的鋼琴音符
+          - generic [ref=e42]:
+            - generic [ref=e43]: "4"
+            - generic [ref=e44]:
+              - generic [ref=e45]: 移動手部位置
+              - generic [ref=e46]: 左右移動手部可以演奏不同音高的音符
+      - generic [ref=e47]:
+        - generic [ref=e48]:
+          - generic [ref=e49]: 🎵
+          - generic [ref=e50]: 音樂功能
+        - generic [ref=e51]:
+          - paragraph [ref=e52]:
+            - text: •
+            - strong [ref=e53]: 音色切換
+            - text: ：在控制面板中可以選擇不同的樂器音色（鋼琴、吉他、長笛、風琴）
+          - paragraph [ref=e54]:
+            - text: •
+            - strong [ref=e55]: 錄音功能
+            - text: ：點擊錄音按鈕開始錄製，錄製完畢後可以播放或清除錄音
+          - paragraph [ref=e56]:
+            - text: •
+            - strong [ref=e57]: 觸控支援
+            - text: ：也可以直接點擊鋼琴鍵盤來演奏
+      - generic [ref=e58]:
+        - generic [ref=e59]:
+          - generic [ref=e60]: 💡
+          - generic [ref=e61]: 小技巧
+        - generic [ref=e62]:
+          - paragraph [ref=e63]: • 保持良好光線，讓相機能清晰看到您的手部
+          - paragraph [ref=e64]: • 避免手部快速晃動，會影響手勢辨識的準確度
+          - paragraph [ref=e65]: • 可以使用雙手同時演奏，同一時間最多支援兩隻手
+          - paragraph [ref=e66]: • 如果手勢辨識不正常，請刷新頁面重試
+      - generic [ref=e67]:
+        - button "立即開始" [ref=e68] [cursor=pointer]
+        - button "稍後再看" [ref=e69] [cursor=pointer]
+      - generic [ref=e70]:
+        - checkbox "不再顯示此引導" [ref=e71] [cursor=pointer]
+        - generic [ref=e72] [cursor=pointer]: 不再顯示此引導
+  - paragraph [ref=e75]: 正在加載 MediaPipe... 請稍待
