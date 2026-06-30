@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>手勢辨識 & Air Piano</title>
+    <title>🎹 Air Piano - 手勢辨識空中鋼琴</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1675466862/camera_utils.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
@@ -241,53 +241,287 @@
             transform: translateX(20px); 
         }
         
-        /* Piano Keys */
+        /* Piano Keys - 新設計 */
         .piano-keys { 
             position: absolute; 
-            bottom: 20px; 
-            left: 10%; 
-            right: 10%; 
-            height: 120px; 
+            bottom: 15px; 
+            left: 5%; 
+            right: 5%; 
+            height: 140px; 
             display: none; 
             pointer-events: auto;
             z-index: 20;
         }
         .piano-mode-indicator.active ~ .piano-keys { 
-            display: flex; 
+            display: block; 
         }
-        .piano-key { 
-            flex: 1; 
-            background: rgba(0, 247, 255, 0.08); 
-            border-right: 1px solid var(--glass-border); 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            color: var(--neon-blue-dim); 
-            font-weight: bold; 
-            font-size: 0.9rem;
+        .piano-mode-indicator.active ~ .piano-control-panel { 
+            display: block; 
+        }
+        
+        /* 鋼琴控制面板 */
+        .piano-control-panel {
+            position: absolute;
+            bottom: 155px;  /* 在鍵盤上方 */
+            left: 5%;
+            right: 5%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: none;
+            z-index: 20;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .control-label {
+            font-size: 0.85rem;
+            color: var(--neon-blue-dim);
+            margin-right: 5px;
+        }
+        
+        .control-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            color: var(--text-primary);
+            padding: 8px 15px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
             transition: all 0.2s ease;
-            border-radius: 8px;
+            white-space: nowrap;
+        }
+        
+        .control-btn:hover {
+            background: rgba(0, 247, 255, 0.1);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .control-btn.recording {
+            background: rgba(255, 0, 0, 0.2);
+            border-color: #ff4444;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.4);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.4); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 0, 0, 0); }
+        }
+        
+        .btn-icon {
+            font-size: 1rem;
+        }
+        
+        .btn-text {
+            font-size: 0.8rem;
+        }
+        
+        .instrument-select {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 25px;
+            color: var(--text-primary);
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        
+        .instrument-select:hover {
+            border-color: var(--neon-blue);
+        }
+        
+        .instrument-select option {
+            background: var(--bg-dark);
+            color: var(--text-primary);
+        }
+        
+        .recording-status {
+            font-size: 0.8rem;
+            color: var(--neon-blue-dim);
+            text-align: center;
+            margin-top: 5px;
+            min-height: 18px;
+        }
+        
+        .recording-status.recording {
+            color: #ff4444;
+            font-weight: bold;
+        }
+        
+        /* 觸控設備上的控制按鈕調整 */
+        @media (hover: none) and (pointer: coarse) {
+            .control-btn {
+                padding: 10px 16px;
+                border-radius: 30px;
+            }
+            .btn-icon {
+                font-size: 1.1rem;
+            }
+            .btn-text {
+                display: none;
+            }
+            .instrument-select {
+                padding: 8px 15px;
+                width: 100%;
+            }
+        }
+        .piano-row {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+        
+        /* 白鍵樣式 */
+        .white-key {
+            width: 8%;
+            height: 100%;
+            background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+            border: 2px solid #e0e0e0;
+            border-bottom: 3px solid #c0c0c0;
+            border-radius: 0 0 8px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
             cursor: pointer;
             user-select: none;
-            margin: 0 1px;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 1;
         }
-        .piano-key:last-child { 
-            border-right: none; 
+        
+        .white-key:first-child {
+            border-left: 2px solid #e0e0e0;
+            border-radius: 0 0 8px 8px;
         }
-        .piano-key.active { 
-            background: rgba(0, 247, 255, 0.4); 
-            color: var(--neon-blue); 
-            box-shadow: 0 0 20px rgba(0, 247, 255, 0.6);
-            transform: scale(1.05);
+        
+        .white-key:last-child {
+            border-right: 2px solid #e0e0e0;
+            border-radius: 0 0 8px 8px;
         }
-        .piano-key:hover {
-            background: rgba(0, 247, 255, 0.15);
-            color: var(--neon-blue);
+        
+        .white-key:hover {
+            background: linear-gradient(to bottom, #f8f8f8 0%, #e8e8e8 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .piano-key:active {
-            background: rgba(0, 247, 255, 0.25);
-            transform: scale(0.98);
+        
+        .white-key:active {
+            background: linear-gradient(to bottom, #e8e8e8 0%, #d8d8d8 100%);
+            transform: translateY(1px);
+            border-top: 2px solid #c0c0c0;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.1);
         }
+        
+        .white-key.active {
+            background: linear-gradient(to bottom, rgba(0, 247, 255, 0.6) 0%, rgba(0, 247, 255, 0.4) 100%);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        /* 黑鍵樣式 */
+        .black-key {
+            width: 5%;
+            height: 65%;
+            background: linear-gradient(to bottom, #2c2c2c 0%, #1a1a1a 100%);
+            border: 2px solid #000;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.15s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+            position: absolute;
+            top: 0;
+            z-index: 2;
+            color: #ffffff;
+        }
+        
+        .black-key:hover {
+            background: linear-gradient(to bottom, #3c3c3c 0%, #2a2a2a 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        .black-key:active {
+            background: linear-gradient(to bottom, #2a2a2a 0%, #1a1a1a 100%);
+            transform: translateY(1px);
+            border-top: 2px solid #000;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        
+        .black-key.active {
+            background: linear-gradient(to bottom, rgba(0, 247, 255, 0.8) 0%, rgba(0, 247, 255, 0.6) 100%);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.6);
+            transform: translateY(-3px);
+        }
+        
+        /* 鍵盤標籤 */
+        .key-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #333;
+        }
+        
+        .white-key .key-label {
+            color: #333;
+        }
+        
+        .black-key .key-label {
+            color: #fff;
+            font-size: 0.7rem;
+        }
+        
+        .key-subtitle {
+            font-size: 0.65rem;
+            color: #888;
+            margin-bottom: 5px;
+        }
+        
+        .white-key .key-subtitle {
+            color: #888;
+        }
+        
+        .black-key .key-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* 黑鍵的定位 */
+        .black-key:nth-of-type(1) { left: 8%; }  /* C# */
+        .black-key:nth-of-type(2) { left: 16%; } /* D# */
+        .black-key:nth-of-type(3) { left: 32%; } /* F# */
+        .black-key:nth-of-type(4) { left: 40%; } /* G# */
+        .black-key:nth-of-type(5) { left: 48%; } /* A# */
         
         /* Info Panel */
         .info-panel { 
@@ -600,9 +834,46 @@
                 height: 80px;
                 bottom: 10px;
             }
-            .piano-key {
+            .white-key {
+                width: 10%;
+                height: 100%;
+            }
+            .black-key {
+                width: 6%;
+                height: 60%;
+                font-size: 0.6rem;
+            }
+            .key-label {
                 font-size: 0.7rem;
             }
+            .key-subtitle {
+                font-size: 0.55rem;
+                display: none;
+            }
+            .piano-control-panel {
+                bottom: 95px;
+                padding: 10px;
+            }
+            .control-group {
+                gap: 8px;
+                margin-bottom: 8px;
+            }
+            .control-btn {
+                padding: 8px 12px;
+                font-size: 0.8rem;
+            }
+            .btn-text {
+                display: none;
+            }
+            .recording-status {
+                font-size: 0.75rem;
+            }
+            /* 手機螢幕上的黑鍵定位調整 */
+            .black-key:nth-of-type(1) { left: 9%; }
+            .black-key:nth-of-type(2) { left: 17%; }
+            .black-key:nth-of-type(3) { left: 33%; }
+            .black-key:nth-of-type(4) { left: 41%; }
+            .black-key:nth-of-type(5) { left: 49%; }
             .gesture-card {
                 padding: 20px 10px;
             }
@@ -655,8 +926,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>🎹 Hand Gesture & Air Piano</h1>
-            <p>使用 MediaPipe Hands 辨識手勢與演奏空中鋼琴</p>
+            <h1>🎹 Air Piano</h1>
+            <p>使用手勢辨識演奏空中鋼琴 - 伸出食指在空中按下即可奏出美妙音樂</p>
         </header>
 
         <!-- Gesture Instructions Modal -->
@@ -695,14 +966,87 @@
                     <div id="pianoToggle" class="toggle-switch"></div>
                 </div>
                 <div id="pianoKeys" class="piano-keys">
-                    <div class="piano-key" data-note="Do">Do</div>
-                    <div class="piano-key" data-note="Re">Re</div>
-                    <div class="piano-key" data-note="Mi">Mi</div>
-                    <div class="piano-key" data-note="Fa">Fa</div>
-                    <div class="piano-key" data-note="Sol">Sol</div>
-                    <div class="piano-key" data-note="La">La</div>
-                    <div class="piano-key" data-note="Si">Si</div>
-                    <div class="piano-key" data-note="Do2">Do</div>
+                    <!-- 白鍵和黑鍵的容器 -->
+                    <div class="piano-row">
+                        <!-- 第一組 -->
+                        <div class="white-key" data-note="Do">
+                            <span class="key-label">Do</span>
+                            <span class="key-subtitle">C</span>
+                        </div>
+                        <div class="black-key" data-note="Do#">
+                            <span class="key-label">C#</span>
+                        </div>
+                        <div class="white-key" data-note="Re">
+                            <span class="key-label">Re</span>
+                            <span class="key-subtitle">D</span>
+                        </div>
+                        <div class="black-key" data-note="Re#">
+                            <span class="key-label">D#</span>
+                        </div>
+                        <!-- 第二組 -->
+                        <div class="white-key" data-note="Mi">
+                            <span class="key-label">Mi</span>
+                            <span class="key-subtitle">E</span>
+                        </div>
+                        <div class="white-key" data-note="Fa">
+                            <span class="key-label">Fa</span>
+                            <span class="key-subtitle">F</span>
+                        </div>
+                        <div class="black-key" data-note="Fa#">
+                            <span class="key-label">F#</span>
+                        </div>
+                        <!-- 第三組 -->
+                        <div class="white-key" data-note="Sol">
+                            <span class="key-label">Sol</span>
+                            <span class="key-subtitle">G</span>
+                        </div>
+                        <div class="black-key" data-note="Sol#">
+                            <span class="key-label">G#</span>
+                        </div>
+                        <div class="white-key" data-note="La">
+                            <span class="key-label">La</span>
+                            <span class="key-subtitle">A</span>
+                        </div>
+                        <div class="black-key" data-note="La#">
+                            <span class="key-label">A#</span>
+                        </div>
+                        <!-- 第四組 -->
+                        <div class="white-key" data-note="Si">
+                            <span class="key-label">Si</span>
+                            <span class="key-subtitle">B</span>
+                        </div>
+                        <div class="white-key" data-note="Do2">
+                            <span class="key-label">Do</span>
+                            <span class="key-subtitle">C</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 鋼琴控制面板 -->
+                <div id="pianoControlPanel" class="piano-control-panel" style="display: none;">
+                    <div class="control-group">
+                        <button id="recordBtn" class="control-btn record-btn" title="錄音">
+                            <span class="btn-icon">🎤</span>
+                            <span class="btn-text">錄音</span>
+                        </button>
+                        <button id="playRecordingBtn" class="control-btn play-btn" title="播放錄音" style="display: none;">
+                            <span class="btn-icon">▶️</span>
+                            <span class="btn-text">播放</span>
+                        </button>
+                        <button id="clearRecordingBtn" class="control-btn clear-btn" title="清除錄音" style="display: none;">
+                            <span class="btn-icon">🗑️</span>
+                            <span class="btn-text">清除</span>
+                        </button>
+                    </div>
+                    <div class="control-group instrument-group">
+                        <span class="control-label">音色:</span>
+                        <select id="instrumentSelect" class="instrument-select">
+                            <option value="piano">🎹 鋼琴</option>
+                            <option value="guitar">🎸 吉他</option>
+                            <option value="flute">🎷 長笛</option>
+                            <option value="organ">🎺 風琴</option>
+                        </select>
+                    </div>
+                    <div class="recording-status" id="recordingStatus"></div>
                 </div>
             </div>
             <div class="info-panel">
@@ -754,10 +1098,31 @@
         const GN={}; Object.values(G).forEach(x=>GN[x.id]=x.name); // gesture id -> 中文名稱
         const P=['Do','Re','Mi','Fa','Sol','La','Si','Do2'];
         // 鋼琴音符頻率 (C 大調 C4~C5)
-        const NF={Do:261.63,Re:293.66,Mi:329.63,Fa:349.23,Sol:392.00,La:440.00,Si:493.88,Do2:523.25};
+        //音符頻率 (C4 大調，包含黑鍵)
+        const NF={
+            'Do': 261.63, 'Do#': 277.18, 'Re': 293.66, 'Re#': 311.13, 
+            'Mi': 329.63, 'Fa': 349.23, 'Fa#': 369.99, 'Sol': 392.00, 
+            'Sol#': 415.30, 'La': 440.00, 'La#': 466.16, 'Si': 493.88, 'Do2': 523.25
+        };
+        
+        // 音色選擇
+        const Instruments = {
+            piano: { name: '🎹 鋼琴', wave: 'sine', decay: 0.6 },
+            guitar: { name: '🎸 吉他', wave: 'sawtooth', decay: 0.8 },
+            flute: { name: '🎷 長笛', wave: 'triangle', decay: 1.0 },
+            organ: { name: '🎺 風琴', wave: 'square', decay: 0.4 }
+        };
+        
+        // 目前選中的樂器
+        let currentInstrument = 'piano';
+        let recording = [];
+        let isRecording = false;
         const C={ST:5,CD:1000,PD:150,PC:100,FT:170,OK:0.05,TU:-0.3,TD:0.3,minExtendedForGesture:2};
         // STATE
-        let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now();
+        let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now(),isRecording=false,isPlayingRecording=false;
+        
+        // Piano control elements
+        let pianoControlPanel=null,recordBtn=null,playRecordingBtn=null,clearRecordingBtn=null,instrumentSelect=null,recordingStatus=null;
         // ELEMENTS
         let ls,em,et,rm,pi,pic,pgic,gn,gv,cf,fpsv,sn,mn,lhn,rhn,pks,gestureModal,closeGestureBtn,showGestureHelp,gestureList,gesturesContainer;
         function getElements(){
@@ -787,6 +1152,14 @@
             showGestureHelp=document.getElementById('showGestureHelp');
             gestureList=document.getElementById('gestureList');
             gesturesContainer=document.getElementById('gesturesTagContainer');
+            
+            // Piano control elements
+            pianoControlPanel=document.getElementById('pianoControlPanel');
+            recordBtn=document.getElementById('recordBtn');
+            playRecordingBtn=document.getElementById('playRecordingBtn');
+            clearRecordingBtn=document.getElementById('clearRecordingBtn');
+            instrumentSelect=document.getElementById('instrumentSelect');
+            recordingStatus=document.getElementById('recordingStatus');
         }
         function showLoading(){ls.style.display='block';}
         function hideLoading(){ls.style.display='none';}
@@ -860,8 +1233,140 @@
         }
         
         function updateGesture(g,c){gv.textContent=g.icon;gn.textContent=g.name;cv.textContent=Math.round(c)+'%';cf.style.width=c+'%';}
+        
+        // 鋼琴控制功能
+        function setupPianoControls() {
+            // 切換樂器
+            if(instrumentSelect) {
+                instrumentSelect.onchange = function() {
+                    currentInstrument = this.value;
+                    // 保存音色選擇
+                    localStorage.setItem('pianoInstrument', currentInstrument);
+                    updateSound(`音色: ${Instruments[currentInstrument].name}`);
+                };
+                
+                // 載入之前的音色選擇
+                const savedInstrument = localStorage.getItem('pianoInstrument');
+                if(savedInstrument && Instruments[savedInstrument]) {
+                    currentInstrument = savedInstrument;
+                    instrumentSelect.value = currentInstrument;
+                }
+            }
+            
+            // 錄音按鈕
+            if(recordBtn) {
+                recordBtn.onclick = toggleRecording;
+            }
+            
+            // 播放錄音按鈕
+            if(playRecordingBtn) {
+                playRecordingBtn.onclick = playRecording;
+            }
+            
+            // 清除錄音按鈕
+            if(clearRecordingBtn) {
+                clearRecordingBtn.onclick = clearRecording;
+            }
+        }
+        
+        // 錄音功能
+        function toggleRecording() {
+            isRecording = !isRecording;
+            
+            if(isRecording) {
+                // 開始錄音
+                recording = [];
+                recordBtn.classList.add('recording');
+                if(recordBtn.querySelector('.btn-icon')) {
+                    recordBtn.querySelector('.btn-icon').textContent = '⏹️';
+                }
+                if(recordBtn.querySelector('.btn-text')) {
+                    recordBtn.querySelector('.btn-text').textContent = '停止';
+                }
+                if(recordingStatus) {
+                    recordingStatus.textContent = '🎤 錄音中...';
+                    recordingStatus.classList.add('recording');
+                }
+                playRecordingBtn.style.display = 'none';
+                clearRecordingBtn.style.display = 'none';
+                updateSound('錄音開始');
+            } else {
+                // 停止錄音
+                recordBtn.classList.remove('recording');
+                if(recordBtn.querySelector('.btn-icon')) {
+                    recordBtn.querySelector('.btn-icon').textContent = '🎤';
+                }
+                if(recordBtn.querySelector('.btn-text')) {
+                    recordBtn.querySelector('.btn-text').textContent = '錄音';
+                }
+                if(recordingStatus) {
+                    recordingStatus.textContent = `💾 已錄製 ${recording.length} 個音符`;
+                    recordingStatus.classList.remove('recording');
+                }
+                if(recording.length > 0) {
+                    playRecordingBtn.style.display = 'inline-flex';
+                    clearRecordingBtn.style.display = 'inline-flex';
+                }
+                updateSound('錄音結束');
+            }
+        }
+        
+        // 播放錄音
+        function playRecording() {
+            if(recording.length === 0) return;
+            
+            updateSound('播放錄音');
+            isPlayingRecording = true;
+            
+            // 取得第一個音符的時間作為基準
+            const startTime = recording[0].time;
+            
+            recording.forEach((note, index) => {
+                const delay = note.time - startTime;
+                setTimeout(() => {
+                    playPiano(note.note, 'r');
+                }, delay);
+            });
+            
+            // 播放結束後
+            const totalDuration = recording[recording.length - 1].time - startTime;
+            setTimeout(() => {
+                isPlayingRecording = false;
+                updateSound('播放完畢');
+            }, totalDuration + 100);
+        }
+        
+        // 清除錄音
+        function clearRecording() {
+            recording = [];
+            if(recordingStatus) {
+                recordingStatus.textContent = '';
+            }
+            playRecordingBtn.style.display = 'none';
+            clearRecordingBtn.style.display = 'none';
+            updateSound('錄音已清除');
+        }
         function updateSound(n){sn.textContent=n;sn.style.opacity='1';setTimeout(()=>{sn.style.transition='opacity 0.5s';sn.style.opacity='0.7';},100);}
-        function updatePiano(){lhn.textContent=lh||'--';rhn.textContent=rh||'--';pks.forEach(k=>k.classList.remove('active'));if(lh){const e=document.querySelector(`.piano-key[data-note="${lh}"]`);if(e)e.classList.add('active');}if(rh){const e=document.querySelector(`.piano-key[data-note="${rh}"]`);if(e)e.classList.add('active');}}
+        // 更新鋼琴顯示
+        function updatePiano(){
+            lhn.textContent = lh || '--';
+            rhn.textContent = rh || '--';
+            
+            // 移除所有鍵的 active 狀態
+            document.querySelectorAll('.white-key, .black-key').forEach(k => {
+                k.classList.remove('active');
+            });
+            
+            // 為按下的音符加上 active 狀態
+            if(lh) {
+                const leftKey = document.querySelector(`[data-note="${lh}"]`);
+                if(leftKey) leftKey.classList.add('active');
+            }
+            if(rh) {
+                const rightKey = document.querySelector(`[data-note="${rh}"]`);
+                if(rightKey) rightKey.classList.add('active');
+            }
+        }
         function resizeCanvas(){if(cam?.video){can.width=cam.video.videoWidth;can.height=cam.video.videoHeight;}else{can.width=1280;can.height=720;}}
         // 單一共用 AudioContext（避免每次播放都新建造成資源耗盡）
         let actx=null;
@@ -869,7 +1374,24 @@
         // 以振盪器合成單一音符；dur 秒數，含淡出包絡避免爆音
         function tone(freq,dur=0.5,type='triangle'){const c=getCtx();if(!c)return;try{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.02);}catch(e){}}
         function playSound(gid){const now=performance.now();if(now<cdEnd)return;tone(GF[gid]||440,0.4);updateSound(GN[gid]||gid);cdEnd=now+C.CD;}
-        function playPiano(note,hk){tone(NF[note]||440,0.6);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}
+        // 播放鋼琴音符，支援不同音色
+        function playPiano(note, hk) {
+            const freq = NF[note] || 440;
+            const instrument = Instruments[currentInstrument];
+            const decay = instrument.decay || 0.6;
+            
+            tone(freq, decay, instrument.wave);
+            updateSound(`${note} - ${instrument.name}`);
+            
+            // 如果正在錄音，記錄這個音符
+            if(isRecording) {
+                recording.push({
+                    note: note,
+                    time: performance.now(),
+                    freq: freq
+                });
+            }
+        }
         function dist(a,b){const dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
         // 手掌尺寸基準 (手腕→中指掌指關節)，用來把所有距離正規化，讓判斷不受手離鏡頭遠近影響
         function handScale(lm){return dist(lm[0],lm[9])||0.0001;}
@@ -942,41 +1464,49 @@
         
         // Handle piano key clicks - 點擊鋼琴鍵時觸發音符
         function setupPianoKeyListeners(){
-            if(pks && pks.length > 0) {
-                pks.forEach(key => {
+            // 選取所有白鍵和黑鍵
+            const whiteKeys = document.querySelectorAll('.white-key');
+            const blackKeys = document.querySelectorAll('.black-key');
+            
+            // 為白鍵和黑鍵都加入事件監聽器
+            const allKeys = [...whiteKeys, ...blackKeys];
+            
+            if(allKeys && allKeys.length > 0) {
+                allKeys.forEach(key => {
                     key.onclick = function() {
                         const note = this.getAttribute('data-note');
                         if(note) {
-                            playPiano(note, 'r');  // Treat as right hand for display
-                            // Visual feedback
+                            playPiano(note, 'r');
+                            // 視覺反饋
                             this.classList.add('active');
                             setTimeout(() => {
                                 this.classList.remove('active');
-                            }, 300);
-                            // Update display
-                            lh = null;
+                            }, 200);
+                            // 更新顯示
                             rh = note;
+                            lh = null;
                             updatePiano();
                         }
                     };
-                    // Touch support for mobile
+                    
+                    // 觸控支援
                     key.ontouchstart = function(e) {
                         e.preventDefault();
                         const note = this.getAttribute('data-note');
                         if(note) {
                             playPiano(note, 'r');
                             this.classList.add('active');
-                            // Update display
-                            lh = null;
                             rh = note;
+                            lh = null;
                             updatePiano();
                         }
                     };
+                    
                     key.ontouchend = function(e) {
                         e.preventDefault();
                         setTimeout(() => {
                             this.classList.remove('active');
-                        }, 200);
+                        }, 150);
                     };
                 });
             }
@@ -990,6 +1520,9 @@
             
             // Setup piano key click listeners
             setupPianoKeyListeners();
+            
+            // Setup piano controls (recording, instrument selection)
+            setupPianoControls();
             
             // Piano mode toggle
             pi.onclick=()=>{
