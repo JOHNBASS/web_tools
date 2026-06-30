@@ -880,7 +880,49 @@
         function drawConnections(lm){const cons=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];cons.forEach(([a,b])=>drawConn(lm[a],lm[b]));}
         function drawConn(p1,p2){ctx.beginPath();ctx.moveTo(p1.x*can.width,p1.y*can.height);ctx.lineTo(p2.x*can.width,p2.y*can.height);ctx.strokeStyle='#00f7ff';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();}
         function processGesture(all){if(!all.length){stab=0;updateGesture(G.U,0);return;}const g=recognize(all[0]);stab=g===curG?stab+1:1;curG=g;const c=Math.min(100,stab*20);updateGesture(g,c);if(stab>=C.ST&&g.id!=='unknown'&&g!==lastG){playSound(g.id);lastG=g;}}
-        function processPiano(all){lh=null;rh=null;all.forEach((lm,i)=>{const isLeft=i===0,tip=lm[8],idx=getKeyIdx(tip.x);if(idx!==-1){const note=P[idx],hk=isLeft?'l':'r',now=performance.now();if(now>pd[hk]&&now>pt[hk]+C.PC){if(isLeft)lh=note;else rh=note;playPiano(note,hk);pd[hk]=now+C.PD;pt[hk]=now;}}});updatePiano();}
+        function processPiano(all){lh=null;rh=null;updatePiano();}
+        
+        // Handle piano key clicks - 點擊鋼琴鍵時觸發音符
+        function setupPianoKeyListeners(){
+            if(pks && pks.length > 0) {
+                pks.forEach(key => {
+                    key.onclick = function() {
+                        const note = this.getAttribute('data-note');
+                        if(note) {
+                            playPiano(note, 'r');  // Treat as right hand for display
+                            // Visual feedback
+                            this.classList.add('active');
+                            setTimeout(() => {
+                                this.classList.remove('active');
+                            }, 300);
+                            // Update display
+                            lh = null;
+                            rh = note;
+                            updatePiano();
+                        }
+                    };
+                    // Touch support for mobile
+                    key.ontouchstart = function(e) {
+                        e.preventDefault();
+                        const note = this.getAttribute('data-note');
+                        if(note) {
+                            playPiano(note, 'r');
+                            this.classList.add('active');
+                            // Update display
+                            lh = null;
+                            rh = note;
+                            updatePiano();
+                        }
+                    };
+                    key.ontouchend = function(e) {
+                        e.preventDefault();
+                        setTimeout(() => {
+                            this.classList.remove('active');
+                        }, 200);
+                    };
+                });
+            }
+        }
         async function setupCamera(){try{if(cam){cam.stop();cam=null;}const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false});const v=document.createElement('video');v.setAttribute('playsinline','');v.muted=true;v.srcObject=stream;await v.play();cam={video:v,stop:()=>{stream.getTracks().forEach(t=>t.stop());}};resizeCanvas();hideError();}catch(err){showError('相機權限被拒絕，請允許使用相機');throw err;}}
         let sending=false;
         function startDetection(){function frame(t){fc++;if(t-lf>=1000){fps=Math.round(fc*1000/(t-lf));fc=0;lf=t;fpsv.textContent=fps;}drawFrame();if(hands&&cam?.video&&cam.video.readyState>=2&&!sending){sending=true;hands.send({image:cam.video}).catch(()=>{}).finally(()=>{sending=false;});}if(res?.multiHandLandmarks){drawHands(res.multiHandLandmarks);isPiano?processPiano(res.multiHandLandmarks):processGesture(res.multiHandLandmarks);}else if(!isPiano){stab=0;updateGesture(G.U,0);}requestAnimationFrame(frame);}requestAnimationFrame(frame);}
@@ -888,8 +930,17 @@
             // Initialize gesture modal first
             initializeGestureModal();
             
+            // Setup piano key click listeners
+            setupPianoKeyListeners();
+            
             // Piano mode toggle
-            pi.onclick=()=>{isPiano=!isPiano;pic.classList.toggle('active',isPiano);pgic.style.display=isPiano?'block':'none';updateGesture(G.U,0);mn.textContent=isPiano?'空中鋼琴':'手勢辨識';};
+            pi.onclick=()=>{
+                isPiano=!isPiano;
+                pic.classList.toggle('active',isPiano);
+                pgic.style.display=isPiano?'block':'none';
+                updateGesture(G.U,0);
+                mn.textContent=isPiano?'空中鋼琴':'手勢辨識';
+            };
             
             // Camera retry
             rm.onclick=async()=>{hideError();await setupCamera();};
