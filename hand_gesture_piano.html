@@ -740,9 +740,9 @@
                         <div style="display: flex; justify-content: space-between; margin-bottom: 10px;"><span style="color: var(--neon-blue-dim); font-size: 0.85rem;">左手</span><span style="color: var(--neon-blue-dim); font-size: 0.85rem;">右手</span></div>
                         <div style="display: flex; justify-content: space-between;"><div id="leftHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div><div id="rightHandNote" style="color: var(--neon-blue); font-weight: bold;">--</div></div>
                     </div>
-                    <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">使用食指指尖觸發音符</div>
+                    <div style="margin-top: 15px; font-size: 0.8rem; color: var(--neon-blue-dim);">食指指尖向下「按」一下觸發音符</div>
                 </div>
-                <div class="info-card"><div class="status-label">💡 小提示</div><div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">• 請允許相機權限<br>• 保持良好光線<br>• Air Piano: 食指指尖<br>• 音效由瀏覽器即時合成</div></div>
+                <div class="info-card"><div class="status-label">💡 小提示</div><div style="margin-top: 10px; font-size: 0.85rem; color: var(--neon-blue-dim); line-height: 1.6;">• 請允許相機權限<br>• 保持良好光線<br>• Air Piano: 食指向下按<br>• 音效由瀏覽器即時合成</div></div>
             </div>
         </div>
     </div>
@@ -910,7 +910,35 @@
         function drawConnections(lm){const cons=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];cons.forEach(([a,b])=>drawConn(lm[a],lm[b]));}
         function drawConn(p1,p2){ctx.beginPath();ctx.moveTo(p1.x*can.width,p1.y*can.height);ctx.lineTo(p2.x*can.width,p2.y*can.height);ctx.strokeStyle='#00f7ff';ctx.lineWidth=2;ctx.lineCap='round';ctx.stroke();}
         function processGesture(all){if(!all.length){stab=0;updateGesture(G.U,0);return;}const g=recognize(all[0]);stab=g===curG?stab+1:1;curG=g;const c=Math.min(100,stab*20);updateGesture(g,c);if(stab>=C.ST&&g.id!=='unknown'&&g!==lastG){playSound(g.id);lastG=g;}}
-        function processPiano(all){lh=null;rh=null;updatePiano();}
+        // 每隻手的「按鍵」狀態機：追蹤食指指尖垂直速度，向下快速戳=按下、需抬起才能再次觸發
+        let pBuf={0:{py:null,armed:true,t:0},1:{py:null,armed:true,t:0}};
+        function processPiano(all){
+            if(!all||!all.length){lh=null;rh=null;updatePiano();return;}
+            const now=performance.now();
+            all.forEach((lm,i)=>{
+                if(i>1)return;
+                const b=pBuf[i]||(pBuf[i]={py:null,armed:true,t:0});
+                const s=handScale(lm);
+                const tipY=lm[8].y, tipX=lm[8].x;
+                const extended=fingersUp(lm)[1];          // 食指是否伸直
+                const vy=(b.py==null)?0:(tipY-b.py);       // >0 表示指尖往下移
+                b.py=tipY;
+                if(vy < -s*0.02) b.armed=true;             // 指尖明顯上抬 → 重新待命
+                // 待命中 + 食指伸直 + 向下快速戳 + 已過冷卻時間 → 觸發音符
+                if(b.armed && extended && vy > s*0.06 && now-b.t>C.PD){
+                    const idx=getKeyIdx(1-tipX);           // 鏡像顯示，故用 1-x 對應畫面上的鍵
+                    if(idx!==-1){
+                        const note=P[idx], hk=(i===0)?'r':'l';
+                        playPiano(note,hk);
+                        if(hk==='l')lh=note; else rh=note;
+                        updatePiano();
+                        b.t=now; b.armed=false;            // 觸發後上鎖，需抬手才能再按
+                        const clr=hk;
+                        setTimeout(()=>{ if(clr==='l')lh=null; else rh=null; updatePiano(); },250);
+                    }
+                }
+            });
+        }
         
         // Handle piano key clicks - 點擊鋼琴鍵時觸發音符
         function setupPianoKeyListeners(){
