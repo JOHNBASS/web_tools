@@ -755,7 +755,7 @@
         const P=['Do','Re','Mi','Fa','Sol','La','Si','Do2'];
         // 鋼琴音符頻率 (C 大調 C4~C5)
         const NF={Do:261.63,Re:293.66,Mi:329.63,Fa:349.23,Sol:392.00,La:440.00,Si:493.88,Do2:523.25};
-        const C={ST:5,CD:1000,PD:150,PC:100,FT:160,OK:0.05,TU:-0.3,TD:0.3};
+        const C={ST:5,CD:1000,PD:150,PC:100,FT:170,OK:0.05,TU:-0.3,TD:0.3,minExtendedForGesture:2};
         // STATE
         let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now();
         // ELEMENTS
@@ -872,7 +872,56 @@
         function playPiano(note,hk){tone(NF[note]||440,0.6);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}
         function calcAngle(p1,p2,p3){const v1={x:p1.x-p2.x,y:p1.y-p2.y},v2={x:p3.x-p2.x,y:p3.y-p2.y},dot=v1.x*v2.x+v1.y*v2.y,l1=Math.sqrt(v1.x*v1.x+v1.y*v1.y),l2=Math.sqrt(v2.x*v2.x+v2.y*v2.y);if(!l1||!l2)return 0;return Math.acos(dot/(l1*l2))*(180/Math.PI);}
         function getFingers(lm){const s=[];s.push(calcAngle(lm[0],lm[1],lm[2])>120?'e':'f');s.push(calcAngle(lm[5],lm[6],lm[7])>C.FT?'e':'f');s.push(calcAngle(lm[9],lm[10],lm[11])>C.FT?'e':'f');s.push(calcAngle(lm[13],lm[14],lm[15])>C.FT?'e':'f');s.push(calcAngle(lm[17],lm[18],lm[19])>C.FT?'e':'f');return s;}
-        function recognize(lm){const f=getFingers(lm),ef=f.filter(x=>x==='e').length;if(ef===0)return G.S;const d=Math.sqrt(Math.pow(lm[4].x-lm[8].x,2)+Math.pow(lm[4].y-lm[8].y,2));if(d<C.OK&&f[2]==='e'&&f[3]==='e'&&f[4]==='e')return G.K;if(lm[4].y<lm[0].y+C.TU&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.U2;if(lm[4].y>lm[0].y+C.TD&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.D;switch(ef){case 1:if(f[1]==='e'&&f[0]==='f')return G.O;break;case 2:if(f[1]==='e'&&f[2]==='e'&&f[0]==='f'&&f[3]==='f'&&f[4]==='f')return G.T;break;case 3:return G.H;case 4:return G.F;case 5:return G.V;}return G.U;}
+        function recognize(lm){
+            const f=getFingers(lm);
+            const ef=f.filter(x=>x==='e').length;
+            
+            // OK gesture: thumb and index finger form circle
+            const d=Math.sqrt(Math.pow(lm[4].x-lm[8].x,2)+Math.pow(lm[4].y-lm[8].y,2));
+            if(d<C.OK&&f[2]==='e'&&f[3]==='e'&&f[4]==='e')return G.K;
+            
+            // Thumbs up: thumb up, other fingers down
+            if(lm[4].y<lm[0].y+C.TU&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.U2;
+            
+            // Thumbs down: thumb down, other fingers down  
+            if(lm[4].y>lm[0].y+C.TD&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.D;
+            
+            // Fist: all fingers curled (no extended fingers)
+            if(ef===0)return G.S;
+            
+            // Priority: check for specific 2-finger gestures first (index + middle is most common)
+            if(ef===2){
+                // Standard peace/victory: index and middle fingers
+                if(f[1]==='e'&&f[2]==='e')return G.T;
+                // Index and ring
+                if(f[1]==='e'&&f[3]==='e')return G.T;
+                // Index and pinky
+                if(f[1]==='e'&&f[4]==='e')return G.T;
+                // Middle and ring
+                if(f[2]==='e'&&f[3]==='e')return G.T;
+                // Any 2 fingers extended counts as 2
+                return G.T;
+            }
+            
+            // Check for specific finger counts
+            switch(ef){
+                case 1:
+                    // 1 finger: only index finger extended (most common for pointing)
+                    if(f[1]==='e')return G.O;
+                    break;
+                    
+                case 3:
+                    return G.H;
+                    
+                case 4:
+                    return G.F;
+                    
+                case 5:
+                    return G.V;
+            }
+            
+            return G.U;
+        }
         function getKeyIdx(x){const w=1/P.length;for(let i=0;i<P.length;i++)if(x>=i*w&&x<(i+1)*w)return i;return -1;}
         function drawFrame(){if(cam?.video){const v=cam.video;ctx.save();ctx.scale(-1,1);ctx.translate(-can.width,0);ctx.drawImage(v,0,0,can.width,can.height);ctx.restore();}}
         function drawHands(all){all.forEach(landmarks=>{drawLandmarks(landmarks);drawConnections(landmarks);});}
