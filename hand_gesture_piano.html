@@ -870,56 +870,37 @@
         function tone(freq,dur=0.5,type='triangle'){const c=getCtx();if(!c)return;try{const o=c.createOscillator(),g=c.createGain(),t=c.currentTime;o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.3,t+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);o.start(t);o.stop(t+dur+0.02);}catch(e){}}
         function playSound(gid){const now=performance.now();if(now<cdEnd)return;tone(GF[gid]||440,0.4);updateSound(GN[gid]||gid);cdEnd=now+C.CD;}
         function playPiano(note,hk){tone(NF[note]||440,0.6);updateSound(`${note} (${hk==='l'?'左':'右'}手)`);}
-        function calcAngle(p1,p2,p3){const v1={x:p1.x-p2.x,y:p1.y-p2.y},v2={x:p3.x-p2.x,y:p3.y-p2.y},dot=v1.x*v2.x+v1.y*v2.y,l1=Math.sqrt(v1.x*v1.x+v1.y*v1.y),l2=Math.sqrt(v2.x*v2.x+v2.y*v2.y);if(!l1||!l2)return 0;return Math.acos(dot/(l1*l2))*(180/Math.PI);}
-        function getFingers(lm){const s=[];s.push(calcAngle(lm[0],lm[1],lm[2])>120?'e':'f');s.push(calcAngle(lm[5],lm[6],lm[7])>C.FT?'e':'f');s.push(calcAngle(lm[9],lm[10],lm[11])>C.FT?'e':'f');s.push(calcAngle(lm[13],lm[14],lm[15])>C.FT?'e':'f');s.push(calcAngle(lm[17],lm[18],lm[19])>C.FT?'e':'f');return s;}
+        function dist(a,b){const dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
+        // 手掌尺寸基準 (手腕→中指掌指關節)，用來把所有距離正規化，讓判斷不受手離鏡頭遠近影響
+        function handScale(lm){return dist(lm[0],lm[9])||0.0001;}
+        // 以「指尖離手腕是否比 PIP 關節更遠」判斷手指伸直 — 比單一關節角度穩定，且不受手掌朝向影響
+        // 回傳 [拇指, 食指, 中指, 無名指, 小指] 的布林陣列 (true=伸直)
+        function fingersUp(lm){
+            const w=lm[0],s=handScale(lm),f=[];
+            // 拇指：指尖(4)離小指根部(17)是否比拇指掌指關節(2)更遠 → 向外張開
+            f.push(dist(lm[4],lm[17]) > dist(lm[2],lm[17])*1.05);
+            // 其餘四指：指尖離手腕比 PIP 關節更遠 (加 margin 抑制邊界抖動)
+            const tip=[8,12,16,20], pip=[6,10,14,18];
+            for(let i=0;i<4;i++) f.push(dist(lm[tip[i]],w) > dist(lm[pip[i]],w)+s*0.12);
+            return f;
+        }
         function recognize(lm){
-            const f=getFingers(lm);
-            const ef=f.filter(x=>x==='e').length;
-            
-            // OK gesture: thumb and index finger form circle
-            const d=Math.sqrt(Math.pow(lm[4].x-lm[8].x,2)+Math.pow(lm[4].y-lm[8].y,2));
-            if(d<C.OK&&f[2]==='e'&&f[3]==='e'&&f[4]==='e')return G.K;
-            
-            // Thumbs up: thumb up, other fingers down
-            if(lm[4].y<lm[0].y+C.TU&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.U2;
-            
-            // Thumbs down: thumb down, other fingers down  
-            if(lm[4].y>lm[0].y+C.TD&&f[1]==='f'&&f[2]==='f'&&f[3]==='f'&&f[4]==='f')return G.D;
-            
-            // Fist: all fingers curled (no extended fingers)
-            if(ef===0)return G.S;
-            
-            // Priority: check for specific 2-finger gestures first (index + middle is most common)
-            if(ef===2){
-                // Standard peace/victory: index and middle fingers
-                if(f[1]==='e'&&f[2]==='e')return G.T;
-                // Index and ring
-                if(f[1]==='e'&&f[3]==='e')return G.T;
-                // Index and pinky
-                if(f[1]==='e'&&f[4]==='e')return G.T;
-                // Middle and ring
-                if(f[2]==='e'&&f[3]==='e')return G.T;
-                // Any 2 fingers extended counts as 2
-                return G.T;
+            const f=fingersUp(lm), s=handScale(lm), w=lm[0];
+            const thumb=f[0], idx=f[1], mid=f[2], ring=f[3], pky=f[4];
+            const cnt=(idx?1:0)+(mid?1:0)+(ring?1:0)+(pky?1:0); // 四指伸直數量
+            // OK：拇指與食指指尖靠攏成圈，其餘三指伸直 (距離以手掌尺寸正規化)
+            if(dist(lm[4],lm[8])/s < 0.4 && mid && ring && pky) return G.K;
+            // 四指收合時：依拇指方向判斷 讚/倒讚，否則握拳
+            if(!idx && !mid && !ring && !pky){
+                if(lm[4].y < w.y - s*0.25 && lm[4].y < lm[5].y) return G.U2; // 拇指明顯朝上
+                if(lm[4].y > w.y + s*0.25 && lm[4].y > lm[5].y) return G.D;  // 拇指明顯朝下
+                return G.S;
             }
-            
-            // Check for specific finger counts
-            switch(ef){
-                case 1:
-                    // 1 finger: only index finger extended (most common for pointing)
-                    if(f[1]==='e')return G.O;
-                    break;
-                    
-                case 3:
-                    return G.H;
-                    
-                case 4:
-                    return G.F;
-                    
-                case 5:
-                    return G.V;
-            }
-            
+            // 數手指：必須符合「明確的手指組合」，否則回傳 unknown 不亂猜 (大幅降低誤判)
+            if(cnt===1 && idx) return G.O;                  // 食指
+            if(cnt===2 && idx && mid) return G.T;            // 食指+中指 (V)
+            if(cnt===3 && idx && mid && ring) return G.H;    // 食指+中指+無名指
+            if(cnt===4 && idx && mid && ring && pky) return thumb ? G.V : G.F; // 含拇指=5指，否則=4指
             return G.U;
         }
         function getKeyIdx(x){const w=1/P.length;for(let i=0;i<P.length;i++)if(x>=i*w&&x<(i+1)*w)return i;return -1;}

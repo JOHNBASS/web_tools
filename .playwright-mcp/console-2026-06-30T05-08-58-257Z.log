@@ -1,0 +1,8 @@
+[      82ms] [LOG] 🚀 初始化... @ http://localhost:8731/hand_gesture_piano.html:958
+[      83ms] [LOG] ✅ MediaPipe 完成 @ http://localhost:8731/hand_gesture_piano.html:985
+[     109ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8731/favicon.ico:0
+[    1706ms] [LOG] ✅ 初始化完成! @ http://localhost:8731/hand_gesture_piano.html:991
+[    1995ms] [WARNING] I0000 00:00:1782796140.250000       1 gl_context_webgl.cc:151] Successfully created a WebGL context with major version 3 and handle 3 @ https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands_solution_simd_wasm_bin.js:8
+[    2002ms] [WARNING] I0000 00:00:1782796140.259000       1 gl_context.cc:359] GL version: 3.0 (OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))) @ https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands_solution_simd_wasm_bin.js:8
+[    2003ms] [WARNING] W0000 00:00:1782796140.259000       1 gl_context.cc:1000] OpenGL error checking is disabled @ https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands_solution_simd_wasm_bin.js:8
+[    3359ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://localhost:8731/favicon.ico:0
