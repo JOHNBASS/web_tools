@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calling Compass 呼召羅盤</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
+<style>
+:root {
+  --primary: #6b4f2f;
+  --primary-dark: #4e3720;
+  --primary-light: #f5ede3;
+  --accent: #c9813a;
+  --bg: #f7f4ef;
+  --card-bg: #ffffff;
+  --text: #2d1f0e;
+  --text-muted: #7a6550;
+  --border: #e5d9c9;
+  --danger: #e53e3e;
+  --danger-light: #fff5f5;
+  --success: #2d7a4f;
+  --shadow: 0 2px 8px rgba(107,79,47,0.08);
+  --shadow-lg: 0 8px 24px rgba(107,79,47,0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, #3d2710 100%);
+  color: white;
+  padding: 1.25rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.header-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.3);
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.back-btn:hover { background: rgba(255,255,255,0.15); color: white; }
+
+.header-title { flex: 1; }
+.header-title h1 { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+.header-title p { font-size: 0.8rem; opacity: 0.8; margin-top: 0.1rem; }
+
+/* Progress bar */
+.progress-bar {
+  background: rgba(255,255,255,0.15);
+  border-radius: 4px;
+  height: 4px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+/* Container */
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+/* Section step indicator */
+.section-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--primary);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Card */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  animation: fadeInUp 0.4s ease both;
+}
+
+.card:nth-child(2) { animation-delay: 0.05s; }
+.card:nth-child(3) { animation-delay: 0.1s; }
+.card:nth-child(4) { animation-delay: 0.15s; }
+.card:nth-child(5) { animation-delay: 0.2s; }
+.card:nth-child(6) { animation-delay: 0.25s; }
+.card:nth-child(7) { animation-delay: 0.3s; }
+.card:nth-child(8) { animation-delay: 0.35s; }
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+}
+
+/* Form controls */
+.field-group { margin-bottom: 0.875rem; }
+.field-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.35rem;
+}
+
+input[type="text"],
+input[type="file"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+  background: white;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(107,79,47,0.12);
+}
+
+textarea { resize: vertical; min-height: 90px; }
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
+.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-lg); }
+
+.btn-secondary {
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+}
+.btn-secondary:hover { background: var(--primary); color: white; border-color: var(--primary); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1.5px solid var(--border);
+}
+.btn-outline:hover { background: var(--primary-light); border-color: var(--primary); }
+
+.btn-group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Add role row */
+.role-input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin-bottom: 1rem;
+}
+
+/* Roles grid */
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.role-card {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  background: var(--primary-light);
+  position: relative;
+}
+
+.role-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.4rem;
+}
+
+.role-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.role-score {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.role-delete {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 28px;
+  height: 28px;
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1px solid #fed7d7;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+.role-delete:hover { background: var(--danger); color: white; }
+
+/* Bible roles */
+.bible-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.bible-role {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.bible-role:hover {
+  border-color: var(--accent);
+  background: var(--primary-light);
+}
+
+.bible-role h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.35rem;
+}
+
+.bible-role p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Gift sliders */
+.gift-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.gift-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.gift-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.gift-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.gift-val {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--accent);
+  min-width: 2rem;
+  text-align: right;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+  height: 6px;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.chart-wrap {
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* File input */
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.75rem;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.file-row label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex: 1;
+}
+
+input[type="file"] {
+  flex: 1;
+  min-width: 0;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.85rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.small-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.75rem;
+  text-align: center;
+}
+
+/* Save notice */
+.save-notice {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--success);
+  font-weight: 600;
+}
+.save-notice.show { display: inline-flex; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .role-input-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn-group { flex-direction: column; }
+  .btn-group .btn { justify-content: center; }
+
+  .header-title h1 { font-size: 1.15rem; }
+
+  .gift-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 400px) {
+  .card { padding: 1rem; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="index.html" class="back-btn">← 返回首頁</a>
+    <div class="header-title">
+      <h1>🧭 Calling Compass 呼召羅盤</h1>
+      <p>探索：我想成為什麼角色？我的恩賜如何使用？</p>
+    </div>
+  </div>
+  <div class="progress-bar" style="max-width:1000px;margin:0.75rem auto 0;">
+    <div class="progress-fill" id="progressFill" style="width:0%"></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Step 1: Identity -->
+  <div class="card">
+    <div class="section-step">Step 1</div>
+    <div class="card-title">我的身份探索</div>
+    <div class="field-group">
+      <label class="field-label">你的名字</label>
+      <input type="text" id="name" placeholder="請輸入名字">
+    </div>
+    <div class="field-group">
+      <label class="field-label">未來願景 — 我希望成為怎樣的人？</label>
+      <textarea id="vision" placeholder="描述你理想中的自己、生命目標…"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">生命故事 — 經歷、恩賜、塑造你的時刻</label>
+      <textarea id="story" placeholder="你走過什麼？學到什麼？什麼讓你充滿活力…"></textarea>
+    </div>
+  </div>
+
+  <!-- Step 2: Roles -->
+  <div class="card">
+    <div class="section-step">Step 2</div>
+    <div class="card-title">我的角色清單</div>
+    <div class="role-input-row">
+      <div class="field-group" style="margin:0">
+        <label class="field-label">角色名稱</label>
+        <input type="text" id="roleName" placeholder="例：創業家、教師、藝術家">
+      </div>
+      <div class="field-group" style="margin:0">
+        <label class="field-label">吸引我的原因</label>
+        <input type="text" id="roleWhy" placeholder="為什麼這個角色吸引你？">
+      </div>
+      <button class="btn btn-primary" onclick="addRole()" style="white-space:nowrap">＋ 新增</button>
+    </div>
+    <div id="roles" class="roles-grid"></div>
+  </div>
+
+  <!-- Step 3: Bible roles -->
+  <div class="card">
+    <div class="section-step">Step 3</div>
+    <div class="card-title">聖經角色探索</div>
+    <div class="bible-grid">
+      <div class="bible-role">
+        <h3>約瑟</h3>
+        <p>管理 · 策略 · 解決問題<br>在逆境中忠心，最終影響一個世代</p>
+      </div>
+      <div class="bible-role">
+        <h3>大衛</h3>
+        <p>創造 · 勇氣 · 領導<br>詩人、戰士、牧羊人、君王的結合</p>
+      </div>
+      <div class="bible-role">
+        <h3>保羅</h3>
+        <p>教導 · 傳播 · 建立群體<br>用學識與熱情跨越文化邊界</p>
+      </div>
+      <div class="bible-role">
+        <h3>比撒列</h3>
+        <p>技術 · 設計 · 創造<br>神親自呼召的工藝師，建造聖所</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4: Gifts -->
+  <div class="card">
+    <div class="section-step">Step 4</div>
+    <div class="card-title">恩賜評分</div>
+    <div class="gift-grid">
+      <div class="gift-row">
+        <div class="gift-label-row">
+          <span class="gift-name">🎨 創造</span>
+          <span class="gift-val" id="val-create">5</span>
+        </div>
+        <input type="range" id="create" min="0" max="10" value="5" oninput="onSlider()">
+      </div>
+      <div class="gift-row">
+        <div class="gift-label-row">
+          <span class="gift-name">📖 教導</span>
+          <span class="gift-val" id="val-teach">5</span>
+        </div>
+        <input type="range" id="teach" min="0" max="10" value="5" oninput="onSlider()">
+      </div>
+      <div class="gift-row">
+        <div class="gift-label-row">
+          <span class="gift-name">🏆 領導</span>
+          <span class="gift-val" id="val-lead">5</span>
+        </div>
+        <input type="range" id="lead" min="0" max="10" value="5" oninput="onSlider()">
+      </div>
+      <div class="gift-row">
+        <div class="gift-label-row">
+          <span class="gift-name">📊 管理</span>
+          <span class="gift-val" id="val-manage">5</span>
+        </div>
+        <input type="range" id="manage" min="0" max="10" value="5" oninput="onSlider()">
+      </div>
+      <div class="gift-row">
+        <div class="gift-label-row">
+          <span class="gift-name">💛 關懷</span>
+          <span class="gift-val" id="val-care">5</span>
+        </div>
+        <input type="range" id="care" min="0" max="10" value="5" oninput="onSlider()">
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Step 5: Interview -->
+  <div class="card">
+    <div class="section-step">Step 5</div>
+    <div class="card-title">☕ Coffee Chat 真人訪談紀錄</div>
+    <div class="field-group">
+      <label class="field-label">訪談對象、優點、缺點、真實的一天</label>
+      <textarea id="interview" placeholder="今天訪談了誰？他們的生活帶給你什麼啟發？"></textarea>
+    </div>
+  </div>
+
+  <!-- Step 6: Mission -->
+  <div class="card">
+    <div class="section-step">Step 6</div>
+    <div class="card-title">🌟 我的使命宣言</div>
+    <div class="field-group">
+      <label class="field-label">我是怎樣的人？我要創造什麼？我如何幫助人？</label>
+      <textarea id="mission" placeholder="寫下你的使命宣言，一句話或一段話皆可…" style="min-height:120px"></textarea>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="card">
+    <div class="card-title">💾 儲存 & 匯出</div>
+    <div class="btn-group" style="margin-bottom:1rem">
+      <button class="btn btn-primary" onclick="save()">💾 儲存進度</button>
+      <button class="btn btn-secondary" onclick="exportData()">⬇️ 匯出 JSON</button>
+      <span class="save-notice" id="saveNotice">✓ 已儲存</span>
+    </div>
+    <div class="file-row">
+      <label>📂 匯入備份資料：</label>
+      <input type="file" accept=".json" onchange="importData(event)">
+    </div>
+    <p class="small-note">資料儲存於此瀏覽器 LocalStorage，匯出 JSON 可跨裝置備份</p>
+  </div>
+
+</div>
+
+<script>
+let data = JSON.parse(localStorage.getItem("callingCompass") || '{"roles":[]}');
+
+const GIFT_KEYS = ["create","teach","lead","manage","care"];
+
+let radarChart;
+
+function initChart() {
+  const ctx = document.getElementById("chart");
+  radarChart = new Chart(ctx, {
+    type: "radar",
+    data: {
+      labels: ["創造","教導","領導","管理","關懷"],
+      datasets: [{
+        data: GIFT_KEYS.map(k => Number(document.getElementById(k).value)),
+        backgroundColor: "rgba(201,129,58,0.25)",
+        borderColor: "rgba(201,129,58,0.9)",
+        pointBackgroundColor: "#6b4f2f",
+        borderWidth: 2,
+        pointRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { r: { min: 0, max: 10, ticks: { stepSize: 2 }, pointLabels: { font: { family: "'Noto Sans TC'", size: 13 } } } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function onSlider() {
+  GIFT_KEYS.forEach(k => {
+    document.getElementById("val-" + k).textContent = document.getElementById(k).value;
+  });
+  if (radarChart) {
+    radarChart.data.datasets[0].data = GIFT_KEYS.map(k => Number(document.getElementById(k).value));
+    radarChart.update();
+  }
+  updateProgress();
+}
+
+function updateProgress() {
+  const fields = ["name","vision","story","interview","mission"];
+  const filled = fields.filter(id => document.getElementById(id).value.trim().length > 0).length;
+  const roles = data.roles ? data.roles.length : 0;
+  const total = fields.length + (roles > 0 ? 1 : 0);
+  const done = filled + (roles > 0 ? 1 : 0);
+  const pct = Math.min(100, Math.round((done / (fields.length + 1)) * 100));
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+
+function load() {
+  if (data.name) document.getElementById("name").value = data.name;
+  if (data.vision) document.getElementById("vision").value = data.vision;
+  if (data.story) document.getElementById("story").value = data.story;
+  if (data.interview) document.getElementById("interview").value = data.interview;
+  if (data.mission) document.getElementById("mission").value = data.mission;
+  if (data.gifts) {
+    GIFT_KEYS.forEach(k => {
+      const cn = { create:"創造", teach:"教導", lead:"領導", manage:"管理", care:"關懷" }[k];
+      const val = data.gifts[cn] || data.gifts[k] || 5;
+      document.getElementById(k).value = val;
+      document.getElementById("val-" + k).textContent = val;
+    });
+  }
+  renderRoles();
+}
+
+function save() {
+  data.name = document.getElementById("name").value;
+  data.vision = document.getElementById("vision").value;
+  data.story = document.getElementById("story").value;
+  data.interview = document.getElementById("interview").value;
+  data.mission = document.getElementById("mission").value;
+  data.gifts = {};
+  const labels = ["創造","教導","領導","管理","關懷"];
+  GIFT_KEYS.forEach((k, i) => { data.gifts[labels[i]] = document.getElementById(k).value; });
+  localStorage.setItem("callingCompass", JSON.stringify(data));
+
+  const notice = document.getElementById("saveNotice");
+  notice.classList.add("show");
+  setTimeout(() => notice.classList.remove("show"), 2500);
+
+  updateProgress();
+}
+
+function addRole() {
+  const n = document.getElementById("roleName").value.trim();
+  if (!n) { document.getElementById("roleName").focus(); return; }
+  data.roles = data.roles || [];
+  data.roles.push({ name: n, why: document.getElementById("roleWhy").value.trim(), score: 50 });
+  localStorage.setItem("callingCompass", JSON.stringify(data));
+  document.getElementById("roleName").value = "";
+  document.getElementById("roleWhy").value = "";
+  renderRoles();
+  updateProgress();
+}
+
+function removeRole(i) {
+  data.roles.splice(i, 1);
+  localStorage.setItem("callingCompass", JSON.stringify(data));
+  renderRoles();
+  updateProgress();
+}
+
+function renderRoles() {
+  const container = document.getElementById("roles");
+  if (!data.roles || data.roles.length === 0) {
+    container.innerHTML = "<p style='color:var(--text-muted);font-size:0.9rem;padding:0.75rem 0;'>尚未新增任何角色</p>";
+    return;
+  }
+  container.innerHTML = data.roles.map((r, i) => `
+    <div class="role-card">
+      <button class="role-delete" onclick="removeRole(${i})" title="刪除">✕</button>
+      <h3>${escHtml(r.name)}</h3>
+      <p>${escHtml(r.why || "")}</p>
+      <span class="role-score">${r.score}/100</span>
+    </div>
+  `).join("");
+}
+
+function exportData() {
+  save();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "calling-compass.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      data = JSON.parse(reader.result);
+      localStorage.setItem("callingCompass", JSON.stringify(data));
+      load();
+      if (radarChart) onSlider();
+    } catch {
+      alert("檔案格式錯誤，請匯入正確的 JSON 備份檔。");
+    }
+  };
+  reader.readAsText(file);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Attach progress tracking to text fields
+["name","vision","story","interview","mission"].forEach(id => {
+  document.getElementById(id).addEventListener("input", updateProgress);
+});
+
+load();
+initChart();
+onSlider();
+</script>
+</body>
+</html>

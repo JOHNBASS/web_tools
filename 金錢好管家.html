@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>金錢好管家 - 薪水規劃</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" integrity="sha384-NrKB+u6Ts6AtkIhwPixiKTzgSKNblyhlk0Sohlgar9UHUBzai/sgnNNWWd291xqt" crossorigin="anonymous"></script>
+<style>
+:root {
+  --primary: #8b5e34;
+  --primary-dark: #6b4520;
+  --primary-light: #fdf3e7;
+  --accent: #d4a853;
+  --bg: #f7f4ed;
+  --card-bg: #ffffff;
+  --text: #2d1f0e;
+  --text-muted: #7a6550;
+  --border: #e8dfd0;
+  --danger: #e53e3e;
+  --danger-light: #fff5f5;
+  --success: #38a169;
+  --success-light: #f0fff4;
+  --shadow: 0 2px 8px rgba(139,94,52,0.08);
+  --shadow-lg: 0 8px 24px rgba(139,94,52,0.15);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, #5c3d1e 100%);
+  color: white;
+  padding: 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.header-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: rgba(255,255,255,0.85);
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.3);
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.back-btn:hover {
+  background: rgba(255,255,255,0.15);
+  color: white;
+}
+
+.header-title {
+  flex: 1;
+}
+
+.header-title h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.header-title p {
+  font-size: 0.8rem;
+  opacity: 0.8;
+  margin-top: 0.1rem;
+}
+
+/* Container */
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
+}
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Scripture block */
+.scripture {
+  background: var(--primary-light);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  color: var(--text);
+}
+
+.scripture strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.scripture p + p {
+  margin-top: 0.75rem;
+}
+
+/* Income section */
+.income-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.income-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.income-input-wrap {
+  flex: 1;
+  min-width: 180px;
+  position: relative;
+}
+
+.income-input-wrap::before {
+  content: 'NT$';
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+
+.income-input {
+  width: 100%;
+  padding: 0.875rem 1rem 0.875rem 3rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  background: var(--primary-light);
+  transition: border-color 0.2s;
+  font-family: inherit;
+}
+
+.income-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+/* Expense list */
+.expense-header {
+  display: grid;
+  grid-template-columns: 1fr 140px 50px;
+  gap: 0.75rem;
+  padding: 0 0 0.5rem 0;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0.75rem;
+}
+
+.expense-header span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.expense-header span:nth-child(2) { text-align: right; }
+
+.item {
+  display: grid;
+  grid-template-columns: 1fr 140px 50px;
+  gap: 0.75rem;
+  margin: 0.5rem 0;
+  align-items: center;
+}
+
+.item input[type="text"],
+.item input[type="number"] {
+  padding: 0.625rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  width: 100%;
+  color: var(--text);
+}
+
+.item input[type="text"]:focus,
+.item input[type="number"]:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.item input[type="number"] {
+  text-align: right;
+}
+
+.item-delete {
+  width: 36px;
+  height: 36px;
+  background: var(--danger-light);
+  color: var(--danger);
+  border: 1.5px solid #fed7d7;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.item-delete:hover {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger);
+}
+
+.add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  background: var(--primary-light);
+  color: var(--primary);
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+  margin-top: 0.75rem;
+}
+
+.add-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-style: solid;
+  border-color: var(--primary);
+}
+
+/* Summary */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.summary-box {
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.25rem;
+  text-align: center;
+  border: 1px solid var(--border);
+}
+
+.summary-box.danger { background: var(--danger-light); border-color: #fed7d7; }
+.summary-box.success { background: var(--success-light); border-color: #c6f6d5; }
+
+.summary-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.summary-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.summary-box.danger .summary-value { color: var(--danger); }
+.summary-box.success .summary-value { color: var(--success); }
+
+/* Chart */
+.chart-wrap {
+  position: relative;
+  max-width: 380px;
+  margin: 0 auto;
+}
+
+/* Tips */
+.tips-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.75rem;
+}
+
+.tips-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  padding: 0.75rem 1rem;
+  background: var(--primary-light);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.tips-list li::before {
+  content: '✦';
+  color: var(--accent);
+  flex-shrink: 0;
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+  .expense-header { display: none; }
+
+  .item {
+    grid-template-columns: 1fr 36px;
+    grid-template-rows: auto auto;
+  }
+
+  .item input[type="text"] { grid-column: 1; grid-row: 1; }
+  .item input[type="number"] { grid-column: 1; grid-row: 2; text-align: left; }
+  .item-delete { grid-column: 2; grid-row: 1 / 3; align-self: center; }
+
+  .summary { grid-template-columns: 1fr; }
+
+  .income-section { flex-direction: column; align-items: stretch; }
+  .income-label { text-align: center; }
+
+  .header-title h1 { font-size: 1.2rem; }
+}
+
+@media (max-width: 400px) {
+  .card { padding: 1rem; }
+}
+
+/* Fade in */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card { animation: fadeInUp 0.4s ease both; }
+.card:nth-child(2) { animation-delay: 0.05s; }
+.card:nth-child(3) { animation-delay: 0.1s; }
+.card:nth-child(4) { animation-delay: 0.15s; }
+.card:nth-child(5) { animation-delay: 0.2s; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <a href="index.html" class="back-btn">← 返回首頁</a>
+    <div class="header-title">
+      <h1>💰 金錢好管家</h1>
+      <p>忠心管理神所託付的資源</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <div class="scripture">
+      <p><strong>路加福音 16:10</strong><br>人在最小的事上忠心，在大事上也忠心。</p>
+      <p><strong>馬太福音 25:21</strong><br>你在不多的事上有忠心，我要把許多事派你管理。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💵 我的每月收入</div>
+    <div class="income-section">
+      <span class="income-label">每月薪水</span>
+      <div class="income-input-wrap">
+        <input id="income" class="income-input" type="number" placeholder="0" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📋 資金管理</div>
+    <div class="expense-header">
+      <span>項目名稱</span>
+      <span>金額（NT$）</span>
+      <span></span>
+    </div>
+    <div id="list"></div>
+    <button class="add-btn" onclick="addItem()">＋ 新增支出項目</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 財務分配</div>
+    <div class="summary">
+      <div class="summary-box">
+        <div class="summary-label">每月收入</div>
+        <div class="summary-value" id="totalIncome">0</div>
+      </div>
+      <div class="summary-box danger">
+        <div class="summary-label">總支出</div>
+        <div class="summary-value" id="totalExpense">0</div>
+      </div>
+      <div class="summary-box success">
+        <div class="summary-label">結餘</div>
+        <div class="summary-value" id="balance">0</div>
+      </div>
+    </div>
+    <div class="chart-wrap">
+      <canvas id="chart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📝 金錢管理提醒</div>
+    <ul class="tips-list">
+      <li>先管理，再擴張</li>
+      <li>金錢是工具，不是主人</li>
+      <li>投資未來，也照顧家庭</li>
+      <li>忠心管理每一份收入</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+const defaultItems = [
+  ["十一奉獻", 0],
+  ["投資費", 0],
+  ["房貸", 0],
+  ["伙食花費", 0],
+  ["家裡扶養費", 0],
+  ["玩樂費", 0]
+];
+
+let data = JSON.parse(localStorage.getItem("moneyManager")) || { income: 0, items: defaultItems };
+
+let chart;
+
+function save() {
+  localStorage.setItem("moneyManager", JSON.stringify(data));
+}
+
+function render() {
+  document.getElementById("income").value = data.income || "";
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  data.items.forEach((item, index) => {
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <input type="text" value="${escHtml(item[0])}" placeholder="項目名稱" onchange="changeName(${index}, this.value)">
+      <input type="number" value="${item[1]}" placeholder="0" min="0" onchange="changeMoney(${index}, this.value)">
+      <button class="item-delete" onclick="removeItem(${index})" title="刪除">✕</button>
+    `;
+    list.appendChild(div);
+  });
+
+  calculate();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function addItem() {
+  data.items.push(["新的支出", 0]);
+  save();
+  render();
+  // focus the new name input
+  const inputs = document.querySelectorAll('#list .item input[type="text"]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function removeItem(i) {
+  data.items.splice(i, 1);
+  save();
+  render();
+}
+
+function changeName(i, v) {
+  data.items[i][0] = v;
+  save();
+}
+
+function changeMoney(i, v) {
+  data.items[i][1] = Number(v) || 0;
+  save();
+  calculate();
+}
+
+document.getElementById("income").onchange = function () {
+  data.income = Number(this.value) || 0;
+  save();
+  calculate();
+};
+
+function calculate() {
+  const expense = data.items.reduce((a, b) => a + Number(b[1]), 0);
+  const bal = (data.income || 0) - expense;
+
+  document.getElementById("totalIncome").textContent = (data.income || 0).toLocaleString();
+  document.getElementById("totalExpense").textContent = expense.toLocaleString();
+  document.getElementById("balance").textContent = bal.toLocaleString();
+
+  // Update balance box color
+  const balBox = document.getElementById("balance").parentElement;
+  balBox.className = "summary-box " + (bal < 0 ? "danger" : "success");
+
+  updateChart();
+}
+
+const COLORS = [
+  "#d4a853","#8b5e34","#c17f24","#5c3d1e","#e8b96a",
+  "#a0714a","#f0d5a0","#7a4f2e","#ddb870","#6b4520"
+];
+
+function updateChart() {
+  const labels = data.items.map(x => x[0]);
+  const values = data.items.map(x => Number(x[1]));
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById("chart"), {
+    type: "doughnut",
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: COLORS,
+        borderWidth: 2,
+        borderColor: "#ffffff"
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { font: { family: "'Noto Sans TC'" }, padding: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: NT$ ${ctx.raw.toLocaleString()}`
+          }
+        }
+      }
+    }
+  });
+}
+
+render();
+</script>
+</body>
+</html>
