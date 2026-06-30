@@ -1,0 +1,5 @@
+- generic [ref=e2]:
+  - banner [ref=e3]:
+    - heading "🎹 Hand Gesture & Air Piano" [level=1] [ref=e4]
+    - paragraph [ref=e5]: 使用 MediaPipe Hands 辨識手勢與演奏空中鋼琴
+  - paragraph [ref=e8]: 正在加載 MediaPipe... 請稍待

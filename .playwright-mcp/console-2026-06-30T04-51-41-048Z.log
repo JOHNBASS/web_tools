@@ -1,0 +1,10 @@
+[     845ms] [LOG] 🚀 初始化... @ https://johnbass.github.io/web_tools/hand_gesture_piano.html:165
+[     846ms] [ERROR] 初始化失敗: TypeError: Cannot read properties of undefined (reading 'style')
+    at showLoading (https://johnbass.github.io/web_tools/hand_gesture_piano.html:138:35)
+    at init (https://johnbass.github.io/web_tools/hand_gesture_piano.html:166:85)
+    at start (https://johnbass.github.io/web_tools/hand_gesture_piano.html:168:145)
+    at https://johnbass.github.io/web_tools/hand_gesture_piano.html:168:221 @ https://johnbass.github.io/web_tools/hand_gesture_piano.html:167
+[     882ms] TypeError: Cannot set properties of undefined (setting 'textContent')
+    at showError (https://johnbass.github.io/web_tools/hand_gesture_piano.html:140:47)
+    at https://johnbass.github.io/web_tools/hand_gesture_piano.html:168:192
+[    1159ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://johnbass.github.io/favicon.ico:0
