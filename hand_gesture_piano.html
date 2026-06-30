@@ -8,49 +8,648 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466124/drawing_utils.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.min.js"></script>
     <style>
-        :root { --neon-blue: #00f7ff; --neon-blue-dim: #00a2ff; --glass-bg: rgba(0, 247, 255, 0.1); --glass-border: rgba(0, 247, 255, 0.3); --text-primary: #ffffff; --bg-dark: #0a0a0a; --bg-darker: #050505; }
+        :root { 
+            --neon-blue: #00f7ff; 
+            --neon-blue-dim: #00a2ff; 
+            --glass-bg: rgba(0, 247, 255, 0.1); 
+            --glass-border: rgba(0, 247, 255, 0.3); 
+            --text-primary: #ffffff; 
+            --bg-dark: #0a0a0a; 
+            --bg-darker: #050505; 
+            --success: #00ff88;
+            --warning: #ffaa00;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-dark); color: var(--text-primary); min-height: 100vh; overflow: hidden; }
-        .glass-panel { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); }
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        header { text-align: center; margin-bottom: 30px; }
-        header h1 { font-size: 2.5rem; background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dim)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-shadow: 0 0 20px rgba(0, 247, 255, 0.5); margin-bottom: 10px; }
-        header p { color: var(--neon-blue-dim); font-size: 1rem; }
-        .main-area { display: grid; grid-template-columns: 1fr 350px; gap: 25px; }
-        @media (max-width: 968px) { .main-area { grid-template-columns: 1fr; } }
-        .camera-container { position: relative; aspect-ratio: 16/9; background: var(--bg-darker); border-radius: 15px; overflow: hidden; border: 2px solid var(--glass-border); }
-        .camera-container canvas { width: 100%; height: 100%; object-fit: cover; }
-        .piano-mode-indicator { position: absolute; top: 15px; left: 15px; padding: 8px 15px; background: var(--glass-bg); border: 1px solid var(--neon-blue); border-radius: 20px; font-size: 0.85rem; color: var(--neon-blue); z-index: 10; display: flex; align-items: center; gap: 8px; }
-        .piano-mode-indicator .toggle-switch { width: 40px; height: 20px; background: var(--bg-darker); border-radius: 10px; position: relative; cursor: pointer; border: 1px solid var(--glass-border); }
-        .piano-mode-indicator .toggle-switch::after { content: ''; width: 16px; height: 16px; background: var(--neon-blue); border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: transform 0.3s ease; }
-        .piano-mode-indicator.active .toggle-switch::after { transform: translateX(20px); }
-        .piano-keys { position: absolute; top: 50%; left: 0; right: 0; height: 200px; display: none; pointer-events: none; }
-        .piano-mode-indicator.active ~ .piano-keys { display: flex; }
-        .piano-key { flex: 1; background: rgba(0, 247, 255, 0.05); border-right: 1px solid var(--glass-border); display: flex; align-items: center; justify-content: center; color: var(--neon-blue-dim); font-weight: bold; transition: background 0.2s ease; }
-        .piano-key:last-child { border-right: none; }
-        .piano-key.active { background: rgba(0, 247, 255, 0.3); color: var(--neon-blue); box-shadow: 0 0 15px rgba(0, 247, 255, 0.5); }
-        .info-panel { display: flex; flex-direction: column; gap: 15px; }
-        .info-card { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 20px; }
-        .gesture-card { text-align: center; padding: 30px 20px; }
-        .gesture-icon { font-size: 4rem; margin-bottom: 15px; opacity: 0.8; }
-        .gesture-name { font-size: 1.5rem; color: var(--neon-blue); margin-bottom: 10px; font-weight: bold; }
-        .gesture-subtitle { color: var(--neon-blue-dim); font-size: 0.9rem; }
-        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        @media (max-width: 968px) { .status-grid { grid-template-columns: 1fr; } }
-        .status-item { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 15px; text-align: center; }
-        .status-label { font-size: 0.85rem; color: var(--neon-blue-dim); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
-        .status-value { font-size: 1.2rem; color: var(--neon-blue); font-weight: bold; }
-        .confidence-bar { width: 100%; height: 8px; background: var(--bg-darker); border-radius: 4px; overflow: hidden; margin-top: 10px; }
-        .confidence-fill { height: 100%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-dim)); border-radius: 4px; transition: width 0.3s ease; }
-        .error-message { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 15px; box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); padding: 20px; text-align: center; color: #ff6b6b; display: none; }
-        .error-message.show { display: block; }
-        .btn { background: var(--glass-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 25px; color: var(--neon-blue); padding: 12px 25px; font-size: 1rem; cursor: pointer; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px; }
-        .btn:hover { background: var(--glass-bg); box-shadow: 0 0 20px rgba(0, 247, 255, 0.3); }
-        .musical-note { color: var(--neon-blue); animation: float 2s ease-in-out infinite; }
-        @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        .gesture-tag { background: rgba(0, 247, 255, 0.1); border: 1px solid var(--glass-border); border-radius: 20px; padding: 4px 12px; font-size: 0.85rem; color: var(--neon-blue-dim); display: inline-block; margin: 4px; }
-        .loading-spinner { border: 3px solid var(--glass-border); border-top: 3px solid var(--neon-blue); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: var(--bg-dark); 
+            color: var(--text-primary); 
+            min-height: 100vh; 
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 15px; 
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); 
+        }
+        .container { 
+            max-width: 1400px; 
+            margin: 0 auto; 
+            padding: 15px;
+        }
+        
+        /* Header Styles */
+        header { 
+            text-align: center; 
+            margin-bottom: 25px; 
+            padding: 10px 0;
+        }
+        header h1 { 
+            font-size: clamp(1.8rem, 5vw, 2.5rem); 
+            background: linear-gradient(135deg, var(--neon-blue), var(--neon-blue-dim)); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            background-clip: text; 
+            text-shadow: 0 0 20px rgba(0, 247, 255, 0.5); 
+            margin-bottom: 8px; 
+            line-height: 1.3;
+        }
+        header p { 
+            color: var(--neon-blue-dim); 
+            font-size: clamp(0.9rem, 2.5vw, 1rem); 
+            line-height: 1.5;
+        }
+        
+        /* Gesture Instructions Modal */
+        .gesture-instructions {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .gesture-instructions.show {
+            display: flex;
+        }
+        .gesture-modal {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid var(--neon-blue);
+            border-radius: 20px;
+            max-width: 90vw;
+            max-height: 90vh;
+            width: 800px;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(0, 247, 255, 0.3);
+            position: relative;
+        }
+        .gesture-modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--glass-border);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        .gesture-modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--neon-blue);
+            margin-bottom: 5px;
+        }
+        .gesture-modal-header p {
+            color: var(--neon-blue-dim);
+            font-size: 0.9rem;
+        }
+        .gesture-close-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 247, 255, 0.1);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .gesture-close-btn:hover {
+            background: rgba(0, 247, 255, 0.2);
+            transform: scale(1.1);
+        }
+        .gesture-modal-content {
+            padding: 25px;
+        }
+        .gesture-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+        }
+        .gesture-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .gesture-item:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 247, 255, 0.2);
+        }
+        .gesture-item-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .gesture-item-name {
+            font-size: 1.1rem;
+            color: var(--neon-blue);
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .gesture-item-desc {
+            color: var(--neon-blue-dim);
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        
+        /* Main Area Layout */
+        .main-area { 
+            display: grid; 
+            grid-template-columns: 1fr 350px; 
+            gap: 20px;
+        }
+        
+        /* Camera Container */
+        .camera-container { 
+            position: relative; 
+            aspect-ratio: 16/9; 
+            background: var(--bg-darker); 
+            border-radius: 15px; 
+            overflow: hidden; 
+            border: 2px solid var(--glass-border);
+            touch-action: none;
+        }
+        .camera-container canvas { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block;
+        }
+        
+        /* Piano Mode Toggle */
+        .piano-mode-indicator { 
+            position: absolute; 
+            top: 15px; 
+            left: 15px; 
+            padding: 8px 15px; 
+            background: var(--glass-bg); 
+            border: 1px solid var(--neon-blue); 
+            border-radius: 20px; 
+            font-size: 0.85rem; 
+            color: var(--neon-blue); 
+            z-index: 10; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .piano-mode-indicator:hover {
+            background: rgba(0, 247, 255, 0.15);
+        }
+        .piano-mode-indicator .toggle-switch { 
+            width: 40px; 
+            height: 20px; 
+            background: var(--bg-darker); 
+            border-radius: 10px; 
+            position: relative; 
+            cursor: pointer; 
+            border: 1px solid var(--glass-border); 
+        }
+        .piano-mode-indicator .toggle-switch::after { 
+            content: ''; 
+            width: 16px; 
+            height: 16px; 
+            background: var(--neon-blue); 
+            border-radius: 50%; 
+            position: absolute; 
+            top: 2px; 
+            left: 2px; 
+            transition: transform 0.3s ease; 
+        }
+        .piano-mode-indicator.active .toggle-switch::after { 
+            transform: translateX(20px); 
+        }
+        
+        /* Piano Keys */
+        .piano-keys { 
+            position: absolute; 
+            bottom: 20px; 
+            left: 10%; 
+            right: 10%; 
+            height: 120px; 
+            display: none; 
+            pointer-events: auto;
+            z-index: 20;
+        }
+        .piano-mode-indicator.active ~ .piano-keys { 
+            display: flex; 
+        }
+        .piano-key { 
+            flex: 1; 
+            background: rgba(0, 247, 255, 0.08); 
+            border-right: 1px solid var(--glass-border); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: var(--neon-blue-dim); 
+            font-weight: bold; 
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            border-radius: 8px;
+            cursor: pointer;
+            user-select: none;
+            margin: 0 1px;
+        }
+        .piano-key:last-child { 
+            border-right: none; 
+        }
+        .piano-key.active { 
+            background: rgba(0, 247, 255, 0.4); 
+            color: var(--neon-blue); 
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.6);
+            transform: scale(1.05);
+        }
+        .piano-key:hover {
+            background: rgba(0, 247, 255, 0.15);
+            color: var(--neon-blue);
+        }
+        .piano-key:active {
+            background: rgba(0, 247, 255, 0.25);
+            transform: scale(0.98);
+        }
+        
+        /* Info Panel */
+        .info-panel { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px;
+        }
+        
+        .info-card { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 15px; 
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); 
+            padding: 18px;
+        }
+        
+        .gesture-card { 
+            text-align: center; 
+            padding: 25px 15px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .gesture-icon { 
+            font-size: 3.5rem; 
+            margin-bottom: 12px; 
+            opacity: 0.8;
+        }
+        .gesture-name { 
+            font-size: 1.3rem; 
+            color: var(--neon-blue); 
+            margin-bottom: 8px; 
+            font-weight: bold;
+        }
+        .gesture-subtitle { 
+            color: var(--neon-blue-dim); 
+            font-size: 0.85rem;
+        }
+        
+        .status-grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px; 
+        }
+        
+        .status-item { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 12px; 
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.1), inset 0 0 15px rgba(0, 247, 255, 0.05); 
+            padding: 12px;
+            text-align: center;
+        }
+        .status-label { 
+            font-size: 0.75rem; 
+            color: var(--neon-blue-dim); 
+            margin-bottom: 4px; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+            line-height: 1.3;
+        }
+        .status-value { 
+            font-size: 1.1rem; 
+            color: var(--neon-blue); 
+            font-weight: bold;
+        }
+        
+        /* Confidence Bar */
+        .confidence-bar { 
+            width: 100%; 
+            height: 6px; 
+            background: var(--bg-darker); 
+            border-radius: 4px; 
+            overflow: hidden; 
+            margin-top: 8px; 
+        }
+        .confidence-fill { 
+            height: 100%; 
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-dim)); 
+            border-radius: 4px; 
+            transition: width 0.3s ease; 
+        }
+        
+        /* Supported Gestures Section */
+        .supported-gestures-card {
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 15px; 
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); 
+            padding: 15px;
+        }
+        .supported-gestures-title {
+            font-size: 0.85rem;
+            color: var(--neon-blue-dim);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .help-icon {
+            font-size: 1.1rem;
+            cursor: pointer;
+            color: var(--neon-blue);
+            transition: all 0.2s ease;
+        }
+        .help-icon:hover {
+            color: var(--neon-blue-dim);
+            transform: scale(1.2);
+        }
+        .gestures-tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            justify-content: center;
+        }
+        
+        /* Error Message */
+        .error-message { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 15px; 
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.1), inset 0 0 20px rgba(0, 247, 255, 0.05); 
+            padding: 20px; 
+            text-align: center; 
+            color: #ff6b6b; 
+            display: none; 
+        }
+        .error-message.show { 
+            display: block; 
+        }
+        .error-message h3 {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+        
+        /* Buttons */
+        .btn { 
+            background: var(--glass-bg); 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 25px; 
+            color: var(--neon-blue); 
+            padding: 10px 20px; 
+            font-size: 0.95rem; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            text-decoration: none;
+        }
+        .btn:hover { 
+            background: rgba(0, 247, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.3); 
+        }
+        .btn:active {
+            transform: scale(0.98);
+        }
+        
+        /* Loading Screen */
+        .loading-container {
+            text-align: center;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 60vh;
+        }
+        .loading-spinner { 
+            border: 3px solid var(--glass-border); 
+            border-top: 3px solid var(--neon-blue); 
+            border-radius: 50%; 
+            width: 48px; 
+            height: 48px; 
+            animation: spin 1s linear infinite; 
+            margin-bottom: 15px;
+        }
+        .loading-text {
+            color: var(--neon-blue);
+            font-size: 1rem;
+            margin-top: 10px;
+        }
+        
+        /* Animations */
+        .musical-note { 
+            color: var(--neon-blue); 
+            animation: float 2s ease-in-out infinite; 
+        }
+        @keyframes float { 
+            0%, 100% { transform: translateY(0); } 
+            50% { transform: translateY(-5px); } 
+        }
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .container {
+                padding: 15px;
+            }
+            .main-area {
+                grid-template-columns: 1fr 300px;
+                gap: 18px;
+            }
+        }
+        
+        @media (max-width: 968px) {
+            .main-area {
+                grid-template-columns: 1fr;
+            }
+            .camera-container {
+                aspect-ratio: 4/3;
+            }
+            .info-panel {
+                order: -1;
+            }
+            .piano-keys {
+                bottom: 15px;
+                left: 5%;
+                right: 5%;
+                height: 100px;
+            }
+            .piano-key {
+                font-size: 0.8rem;
+            }
+            .gesture-modal {
+                width: 95vw;
+                max-height: 85vh;
+            }
+            .gesture-list {
+                grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2rem;
+            }
+            header p {
+                font-size: 0.95rem;
+            }
+            .piano-mode-indicator {
+                top: 10px;
+                left: 10px;
+                padding: 6px 12px;
+                font-size: 0.75rem;
+            }
+            .piano-mode-indicator .toggle-switch {
+                width: 35px;
+                height: 18px;
+            }
+            .piano-mode-indicator .toggle-switch::after {
+                width: 14px;
+                height: 14px;
+                top: 2px;
+                left: 2px;
+            }
+            .piano-mode-indicator.active .toggle-switch::after {
+                transform: translateX(17px);
+            }
+            .gesture-icon {
+                font-size: 2.5rem;
+            }
+            .gesture-name {
+                font-size: 1.1rem;
+            }
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+            .gestures-tag-container {
+                gap: 4px;
+            }
+            .gesture-tag {
+                font-size: 0.8rem;
+                padding: 3px 10px;
+                margin: 3px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 10px;
+            }
+            header h1 {
+                font-size: 1.6rem;
+            }
+            header p {
+                font-size: 0.85rem;
+            }
+            .camera-container {
+                aspect-ratio: 1/1;
+                border-radius: 12px;
+            }
+            .piano-keys {
+                height: 80px;
+                bottom: 10px;
+            }
+            .piano-key {
+                font-size: 0.7rem;
+            }
+            .gesture-card {
+                padding: 20px 10px;
+            }
+            .gesture-icon {
+                font-size: 2rem;
+            }
+            .gesture-name {
+                font-size: 1rem;
+            }
+            .gesture-subtitle {
+                font-size: 0.75rem;
+            }
+            .status-item {
+                padding: 10px;
+            }
+            .status-label {
+                font-size: 0.7rem;
+            }
+            .status-value {
+                font-size: 1rem;
+            }
+            .gesture-list {
+                grid-template-columns: 1fr;
+            }
+            .gesture-modal {
+                width: 98vw;
+                border-radius: 15px;
+            }
+            .gesture-modal-header h2 {
+                font-size: 1.3rem;
+            }
+            .btn {
+                padding: 8px 16px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        /* Touch Feedback */
+        @media (hover: none) and (pointer: coarse) {
+            .gesture-tag, .btn, .piano-mode-indicator {
+                cursor: pointer;
+            }
+            .gesture-tag:active, .btn:active, .piano-mode-indicator:active {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+        }
     </style>
 </head>
 <body>
@@ -60,9 +659,26 @@
             <p>使用 MediaPipe Hands 辨識手勢與演奏空中鋼琴</p>
         </header>
 
-        <div id="loadingScreen" style="text-align:center;padding:40px;display:block;">
+        <!-- Gesture Instructions Modal -->
+        <div id="gestureInstructions" class="gesture-instructions">
+            <div class="gesture-modal">
+                <div class="gesture-modal-header">
+                    <h2>👋 手勢辨識說明</h2>
+                    <p>支援的手勢類型與使用方式</p>
+                    <div class="gesture-close-btn" id="closeGestureModal">×</div>
+                </div>
+                <div class="gesture-modal-content">
+                    <div class="gesture-list" id="gestureList">
+                        <!-- Gesture items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loading Screen -->
+        <div id="loadingScreen" class="loading-container">
             <div class="loading-spinner"></div>
-            <p style="color:#00f7ff;margin-top:20px;">正在加載 MediaPipe... 請稍待</p>
+            <p class="loading-text">正在加載 MediaPipe... 請稍待</p>
         </div>
 
         <div id="errorMessage" class="error-message">
@@ -101,9 +717,21 @@
                     <div class="status-item"><div class="status-label">置信度</div><div id="confidenceValue" class="status-value">0%</div><div class="confidence-bar"><div id="confidenceFill" class="confidence-fill" style="width: 0%"></div></div></div>
                     <div class="status-item"><div class="status-label">模式</div><div id="modeName" class="status-value">手勢</div></div>
                 </div>
-                <div class="info-card"><div class="status-label">支援手勢</div>
-                    <div style="margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;">
-                        <span class="gesture-tag">👆 1指</span><span class="gesture-tag">✌️ 2指</span><span class="gesture-tag">🤟 3指</span><span class="gesture-tag">🖖️ 4指</span><span class="gesture-tag">🙌 5指</span><span class="gesture-tag">👊 握拳</span><span class="gesture-tag">👌 OK</span><span class="gesture-tag">👍 讚</span><span class="gesture-tag">👎 倒讚</span>
+                <div class="supported-gestures-card">
+                    <div class="supported-gestures-title">
+                        <span>📋 支援的手勢</span>
+                        <span class="help-icon" id="showGestureHelp">ℹ️</span>
+                    </div>
+                    <div class="gestures-tag-container" id="gesturesTagContainer">
+                        <span class="gesture-tag">👆 1指</span>
+                        <span class="gesture-tag">✌️ 2指</span>
+                        <span class="gesture-tag">🤟 3指</span>
+                        <span class="gesture-tag">🖖️ 4指</span>
+                        <span class="gesture-tag">🙌 5指</span>
+                        <span class="gesture-tag">👊 握拳</span>
+                        <span class="gesture-tag">👌 OK</span>
+                        <span class="gesture-tag">👍 讚</span>
+                        <span class="gesture-tag">👎 倒讚</span>
                     </div>
                 </div>
                 <div class="info-card" id="pianoInfoCard" style="display: none;">
@@ -131,14 +759,106 @@
         // STATE
         let cam=null,hands=null,ctx=null,can=null,res=null,isPiano=false,isInit=false,isReady=false,curG=G.U,stab=0,lastG=null,cdEnd=0,lh=null,rh=null,pt={l:0,r:0},pd={l:0,r:0},fc=0,fps=0,lf=performance.now();
         // ELEMENTS
-        let ls,em,et,rm,pi,pic,pgic,gn,gv,cf,fpsv,sn,mn,lhn,rhn,pks;
+        let ls,em,et,rm,pi,pic,pgic,gn,gv,cf,fpsv,sn,mn,lhn,rhn,pks,gestureModal,closeGestureBtn,showGestureHelp,gestureList,gesturesContainer;
         function getElements(){
-            ls=document.getElementById('loadingScreen');em=document.getElementById('errorMessage');et=document.getElementById('errorText');rm=document.getElementById('retryCamera');pi=document.getElementById('pianoToggle');pic=document.getElementById('pianoModeIndicator');pgic=document.getElementById('pianoInfoCard');gn=document.getElementById('gestureName');gv=document.getElementById('gestureIcon');cv=document.getElementById('confidenceValue');fpsv=document.getElementById('fpsValue');sn=document.getElementById('soundName');mn=document.getElementById('modeName');lhn=document.getElementById('leftHandNote');rhn=document.getElementById('rightHandNote');pks=document.querySelectorAll('.piano-key');can=document.getElementById('output');ctx=can.getContext('2d');cf=document.getElementById('confidenceFill');
+            ls=document.getElementById('loadingScreen');
+            em=document.getElementById('errorMessage');
+            et=document.getElementById('errorText');
+            rm=document.getElementById('retryCamera');
+            pi=document.getElementById('pianoToggle');
+            pic=document.getElementById('pianoModeIndicator');
+            pgic=document.getElementById('pianoInfoCard');
+            gn=document.getElementById('gestureName');
+            gv=document.getElementById('gestureIcon');
+            cv=document.getElementById('confidenceValue');
+            fpsv=document.getElementById('fpsValue');
+            sn=document.getElementById('soundName');
+            mn=document.getElementById('modeName');
+            lhn=document.getElementById('leftHandNote');
+            rhn=document.getElementById('rightHandNote');
+            pks=document.querySelectorAll('.piano-key');
+            can=document.getElementById('output');
+            ctx=can.getContext('2d');
+            cf=document.getElementById('confidenceFill');
+            
+            // Gesture modal elements
+            gestureModal=document.getElementById('gestureInstructions');
+            closeGestureBtn=document.getElementById('closeGestureModal');
+            showGestureHelp=document.getElementById('showGestureHelp');
+            gestureList=document.getElementById('gestureList');
+            gesturesContainer=document.getElementById('gesturesTagContainer');
         }
         function showLoading(){ls.style.display='block';}
         function hideLoading(){ls.style.display='none';}
         function showError(msg){et.textContent=msg;em.classList.add('show');}
         function hideError(){em.classList.remove('show');}
+        
+        // Gesture Modal Functions
+        function showGestureModal(){
+            if(gestureModal) {
+                gestureModal.classList.add('show');
+                document.body.style.overflow='hidden';
+            }
+        }
+        function hideGestureModal(){
+            if(gestureModal) {
+                gestureModal.classList.remove('show');
+                document.body.style.overflow='';
+            }
+        }
+        function initializeGestureModal(){
+            // Define gesture descriptions
+            const gestureDescriptions = {
+                'one': {icon: '👆', name: '1指', desc: '食指伸直，其他手指彎曲，表示數字 1 或指向', sound: '高音階'},
+                'two': {icon: '✌️', name: '2指', desc: '食指和中指伸直，其他手指彎曲，表示勝利或數字 2', sound: '中高音'},
+                'three': {icon: '🤟', name: '3指', desc: '食指、中指、無名指伸直，表示數字 3 或 OK', sound: '中音'},
+                'four': {icon: '🖖️', name: '4指', desc: '除拇指外的四根手指伸直，表示數字 4', sound: '中低音'},
+                'five': {icon: '🙌', name: '5指', desc: '五根手指全部伸直，表示數字 5 或打招呼', sound: '低音'},
+                'fist': {icon: '👊', name: '握拳', desc: '手掌握成拳頭，表示力量或確認', sound: '低音 C'},
+                'ok': {icon: '👌', name: 'OK', desc: '拇指和食指形成圓圈，表示同意或完美', sound: '中音 E'},
+                'thumbup': {icon: '👍', name: '讚', desc: '拇指向上，表示贊同或喜歡', sound: '高音 F'},
+                'thumbdown': {icon: '👎', name: '倒讚', desc: '拇指向下，表示反對或不喜歡', sound: '低音 G'}
+            };
+            
+            // Populate gesture list in modal
+            if(gestureList) {
+                gestureList.innerHTML='';
+                Object.entries(G).forEach(([key, gesture]) => {
+                    if(key !== 'U' && gestureDescriptions[key]) {
+                        const desc = gestureDescriptions[key];
+                        const item = document.createElement('div');
+                        item.className='gesture-item';
+                        item.innerHTML=`
+                            <div class="gesture-item-icon">${gesture.icon}</div>
+                            <div class="gesture-item-name">${gesture.name}</div>
+                            <div class="gesture-item-desc">${desc.desc}</div>
+                        `;
+                        gestureList.appendChild(item);
+                    }
+                });
+            }
+            
+            // Set up event listeners
+            if(closeGestureBtn) {
+                closeGestureBtn.onclick=hideGestureModal;
+            }
+            if(showGestureHelp) {
+                showGestureHelp.onclick=showGestureModal;
+            }
+            
+            // Close modal when clicking outside
+            if(gestureModal) {
+                gestureModal.onclick=function(e){
+                    if(e.target===gestureModal) hideGestureModal();
+                };
+            }
+            
+            // Keyboard support
+            document.addEventListener('keydown',function(e){
+                if(e.key==='Escape') hideGestureModal();
+            });
+        }
+        
         function updateGesture(g,c){gv.textContent=g.icon;gn.textContent=g.name;cv.textContent=Math.round(c)+'%';cf.style.width=c+'%';}
         function updateSound(n){sn.textContent=n;sn.style.opacity='1';setTimeout(()=>{sn.style.transition='opacity 0.5s';sn.style.opacity='0.7';},100);}
         function updatePiano(){lhn.textContent=lh||'--';rhn.textContent=rh||'--';pks.forEach(k=>k.classList.remove('active'));if(lh){const e=document.querySelector(`.piano-key[data-note="${lh}"]`);if(e)e.classList.add('active');}if(rh){const e=document.querySelector(`.piano-key[data-note="${rh}"]`);if(e)e.classList.add('active');}}
@@ -164,7 +884,32 @@
         async function setupCamera(){try{if(cam){cam.stop();cam=null;}const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false});const v=document.createElement('video');v.setAttribute('playsinline','');v.muted=true;v.srcObject=stream;await v.play();cam={video:v,stop:()=>{stream.getTracks().forEach(t=>t.stop());}};resizeCanvas();hideError();}catch(err){showError('相機權限被拒絕，請允許使用相機');throw err;}}
         let sending=false;
         function startDetection(){function frame(t){fc++;if(t-lf>=1000){fps=Math.round(fc*1000/(t-lf));fc=0;lf=t;fpsv.textContent=fps;}drawFrame();if(hands&&cam?.video&&cam.video.readyState>=2&&!sending){sending=true;hands.send({image:cam.video}).catch(()=>{}).finally(()=>{sending=false;});}if(res?.multiHandLandmarks){drawHands(res.multiHandLandmarks);isPiano?processPiano(res.multiHandLandmarks):processGesture(res.multiHandLandmarks);}else if(!isPiano){stab=0;updateGesture(G.U,0);}requestAnimationFrame(frame);}requestAnimationFrame(frame);}
-        async function init(){if(isInit)return;isInit=true;console.log('🚀 初始化...');getElements();showLoading();try{pi.onclick=()=>{isPiano=!isPiano;pic.classList.toggle('active',isPiano);pgic.style.display=isPiano?'block':'none';updateGesture(G.U,0);mn.textContent=isPiano?'空中鋼琴':'手勢辨識';};rm.onclick=async()=>{hideError();await setupCamera();};if(typeof Hands==='undefined'){await new Promise((r,j)=>{let c=0;const chk=()=>{if(typeof Hands!=='undefined')r();else if(c++<100)setTimeout(chk,100);else j(new Error('MediaPipe 加載超時'));};chk();});}hands=new Hands({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.5,minTrackingConfidence:0.5});hands.onResults(r=>{res=r;});console.log('✅ MediaPipe 完成');await setupCamera();hideLoading();document.querySelector('.main-area').style.display='grid';isReady=true;startDetection();console.log('✅ 初始化完成!');}catch(err){hideLoading();console.error('❌ 初始化失敗:',err);showError('加載失敗，請刷新頁面重試');}}
+        async function init(){if(isInit)return;isInit=true;console.log('🚀 初始化...');getElements();showLoading();try{
+            // Initialize gesture modal first
+            initializeGestureModal();
+            
+            // Piano mode toggle
+            pi.onclick=()=>{isPiano=!isPiano;pic.classList.toggle('active',isPiano);pgic.style.display=isPiano?'block':'none';updateGesture(G.U,0);mn.textContent=isPiano?'空中鋼琴':'手勢辨識';};
+            
+            // Camera retry
+            rm.onclick=async()=>{hideError();await setupCamera();};
+            
+            // Wait for MediaPipe Hands to load
+            if(typeof Hands==='undefined'){await new Promise((r,j)=>{let c=0;const chk=()=>{if(typeof Hands!=='undefined')r();else if(c++<100)setTimeout(chk,100);else j(new Error('MediaPipe 加載超時'));};chk();});}
+            
+            // Initialize MediaPipe Hands
+            hands=new Hands({locateFile:(f)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}`});
+            hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:0.5,minTrackingConfidence:0.5});
+            hands.onResults(r=>{res=r;});
+            
+            console.log('✅ MediaPipe 完成');
+            await setupCamera();
+            hideLoading();
+            document.querySelector('.main-area').style.display='grid';
+            isReady=true;
+            startDetection();
+            console.log('✅ 初始化完成!');
+        }catch(err){hideLoading();console.error('❌ 初始化失敗:',err);showError('加載失敗，請刷新頁面重試');}}
         window.addEventListener('resize',resizeCanvas);window.addEventListener('beforeunload',()=>{if(cam)cam.stop();if(hands)hands.close();});
         let initCalled=false;function start(){if(initCalled)return;initCalled=true;if(typeof Hands==='undefined'){setTimeout(start,100);return;}init().catch(err=>{console.error('初始化失敗:',err);showError('初始化失敗，請刷新頁面');});}start();
     </script>
