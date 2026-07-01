@@ -6,23 +6,7 @@ let simulationResults = [];
 let currentTheme = 'light';
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', function() {
-    // Ensure Chart.js is loaded
-    if (typeof Chart === 'undefined') {
-        console.error('Chart.js not loaded!');
-        // Create a fallback script tag
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-        script.onload = initializeApp;
-        script.onerror = function() {
-            console.error('Failed to load Chart.js');
-            initializeApp();
-        };
-        document.head.appendChild(script);
-    } else {
-        initializeApp();
-    }
-});
+document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -54,9 +38,6 @@ function initializeChartDefaults() {
     if (typeof Chart !== 'undefined') {
         Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
         Chart.defaults.color = '#64748b';
-    } else {
-        console.warn('Chart.js not available, will retry later');
-        setTimeout(initializeChartDefaults, 500);
     }
 }
 
@@ -578,10 +559,6 @@ function createResultsCharts(simulationResults) {
 }
 
 function createAssetLoanChart(simulationResults) {
-    if (typeof Chart === 'undefined') {
-        console.warn('Chart.js not loaded, skipping chart creation');
-        return;
-    }
     const ctx = document.getElementById('assetLoanChart');
     if (!ctx) return;
     if (charts.assetLoanChart) charts.assetLoanChart.destroy();
@@ -643,10 +620,6 @@ function createAssetLoanChart(simulationResults) {
 }
 
 function createNetWorthChart(simulationResults) {
-    if (typeof Chart === 'undefined') {
-        console.warn('Chart.js not loaded, skipping chart creation');
-        return;
-    }
     const ctx = document.getElementById('netWorthChart');
     if (!ctx) return;
     if (charts.netWorthChart) charts.netWorthChart.destroy();
