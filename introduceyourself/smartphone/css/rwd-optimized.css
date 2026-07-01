@@ -1,0 +1,583 @@
+/* ============================================
+   RWD Optimized Styles for John WEB 履歷
+   优化响应式设计和用户体验
+   ============================================ */
+
+/* Modern Viewport Meta Tag Backup */
+@viewport {
+  width: device-width;
+  initial-scale: 1;
+  maximum-scale: 1;
+  user-scalable: yes;
+}
+
+/* ============================================
+   Base Improvements
+   ============================================ */
+
+/* 设置 html 和 body 的基础样式 */
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-width: 320px;
+  line-height: 1.6;
+  color: #333;
+}
+
+/* 优化图片显示 */
+img {
+  height: auto;
+  max-width: 100%;
+  display: block;
+}
+
+/* 优化 a 标签的触摸区域 */
+a {
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  tap-highlight-color: rgba(0,0,0,0);
+}
+
+/* ============================================
+   Mobile First - 小屏幕优先 (0-767px)
+   ============================================ */
+
+@media only screen and (max-width: 767px) {
+  /* 基础字体大小调整 */
+  html {
+    font-size: 14px;
+  }
+
+  /* 头部优化 */
+  .header {
+    padding: 1em 0;
+  }
+
+  .header-top {
+    position: relative;
+  }
+
+  /* Logo 优化 */
+  .logo {
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .logo img {
+    max-width: 80%;
+    margin: 0 auto;
+  }
+
+  /* 导航优化 - 确保移动导航可见 */
+  #w3-menu-trigger {
+    display: block !important;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 9999;
+    width: 40px;
+    height: 40px;
+    background: #87509c url(../images/nav.png) no-repeat center;
+    background-size: 24px 24px;
+  }
+
+  .nav-list {
+    display: none;
+  }
+
+  .nav-list.active {
+    display: block;
+    position: absolute;
+    top: 55px;
+    left: 0;
+    width: 100%;
+    background: #34495E;
+    z-index: 999;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+  }
+
+  .nav-list.active .nav-item {
+    float: none;
+    display: block;
+    width: 100%;
+    border-bottom: 1px solid #1F253D;
+  }
+
+  .nav-list.active .nav-item a {
+    padding: 12px 15px;
+    font-size: 0.9em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Header Description 优化 */
+  .header_desc {
+    padding: 1.5em 0 1em 0;
+  }
+
+  .header_desc p {
+    font-size: 1.2em;
+    line-height: 1.4;
+    padding: 0 10px;
+  }
+
+  /* 团队区域优化 */
+  .grid_1_of_4 {
+    width: 100% !important;
+    float: none !important;
+    margin: 0 !important;
+    padding: 0 0 15px 0 !important;
+  }
+
+  .team_1_of_4 {
+    width: 100% !important;
+    padding: 15px !important;
+  }
+
+  /* Services Grid 优化 */
+  .services_1_of_4 {
+    width: 100% !important;
+    padding: 15px !important;
+    margin-bottom: 15px !important;
+  }
+
+  /* Skills 优化 */
+  .Skills h4,
+  .team h4,
+  .services h4,
+  .portfolio-grid h4,
+  .about h4 {
+    font-size: 1.1em !important;
+    padding-bottom: 0.5em !important;
+  }
+
+  /* Portfolio Grid 优化 */
+  #portfoliolist .portfolio {
+    width: 96% !important;
+    margin: 15px 2% !important;
+    float: none !important;
+  }
+
+  /* About Section 优化 */
+  .listview_1_of_2 {
+    float: none !important;
+    width: 100% !important;
+    margin-bottom: 15px !important;
+  }
+
+  .listimg {
+    float: none !important;
+    width: 100% !important;
+    text-align: center;
+  }
+
+  .text {
+    float: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: center;
+  }
+
+  .images_1_of_2 {
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .listimg_2_of_1 {
+    width: 100% !important;
+    margin: 0 auto 15px auto !important;
+    float: none !important;
+  }
+
+  .list_2_of_1 {
+    width: 100% !important;
+    float: none !important;
+    text-align: center;
+  }
+
+  /* Feedback Section 优化 */
+  .feedback {
+    padding: 1.5em 0;
+  }
+
+  .feedback input[type="text"],
+  .feedback textarea {
+    width: 95%;
+    padding: 12px;
+    font-size: 1em;
+  }
+
+  /* Footer 优化 */
+  .copy-right {
+    padding: 1em 10px;
+  }
+
+  .copy-right p {
+    font-size: 0.85em !important;
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  /* 清除 float */
+  .clear {
+    clear: both;
+    display: block;
+    height: 0;
+    line-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    width: 0;
+  }
+}
+
+/* ============================================
+   Tablet Devices (768px - 1024px)
+   ============================================ */
+
+@media only screen and (min-width: 768px) and (max-width: 1024px) {
+  /* 基础字体 */
+  html {
+    font-size: 15px;
+  }
+
+  /* 导航优化 */
+  .nav-list {
+    display: block;
+  }
+
+  .nav-item {
+    float: left;
+    display: inline-block;
+  }
+
+  .nav-item a {
+    padding: 12px 15px;
+    font-size: 0.9em;
+  }
+
+  /* 网格布局调整 */
+  .grid_1_of_4 {
+    width: 48% !important;
+    margin: 0 2% 15px 0 !important;
+    float: left !important;
+  }
+
+  .grid_1_of_4:nth-child(2n+1) {
+    margin-left: 0 !important;
+    clear: both;
+  }
+
+  .services_1_of_4 {
+    width: 94%;
+    padding: 15px;
+  }
+
+  /* About Section */
+  .listview_1_of_2 {
+    width: 48%;
+    margin: 0 2% 15px 0;
+    float: left;
+  }
+
+  .listview_1_of_2:first-child {
+    margin-left: 0;
+  }
+
+  .listimg_2_of_1 {
+    width: 30%;
+    float: left;
+    margin-right: 3%;
+  }
+
+  .list_2_of_1 {
+    width: 67%;
+    float: left;
+    text-align: left;
+  }
+
+  /* Portfolio */
+  #portfoliolist .portfolio {
+    width: 48%;
+    margin: 15px 1%;
+  }
+
+  #portfoliolist .portfolio:nth-child(2n+1) {
+    clear: both;
+  }
+}
+
+/* ============================================
+   Desktop and Larger Screens (1025px+)
+   ============================================ */
+
+@media only screen and (min-width: 1025px) {
+  /* 保持原始设计 */
+  html {
+    font-size: 16px;
+  }
+
+  /* 导航显示完整 */
+  .nav-list {
+    display: block;
+  }
+
+  /* 网格布局 - 4 列 */
+  .grid_1_of_4 {
+    width: 23.5%;
+    margin: 0 1%;
+    float: left;
+  }
+
+  .grid_1_of_4:first-child {
+    margin-left: 0;
+  }
+
+  .grid_1_of_4:nth-child(4n+1) {
+    clear: both;
+  }
+
+  /* About Section - 2 列布局 */
+  .listview_1_of_2 {
+    width: 48%;
+    margin: 0 2%;
+    float: left;
+  }
+
+  .listview_1_of_2:first-child {
+    margin-left: 0;
+  }
+
+  .listimg_2_of_1 {
+    width: 20%;
+    float: left;
+    margin-right: 4%;
+  }
+
+  .list_2_of_1 {
+    width: 76%;
+    float: left;
+    text-align: left;
+  }
+
+  /* Portfolio - 2 列 */
+  #portfoliolist .portfolio {
+    width: 48%;
+    margin: 15px 1%;
+  }
+
+  #portfoliolist .portfolio:nth-child(2n+1) {
+    clear: both;
+  }
+}
+
+/* ============================================
+   Ultra Wide Screens (1400px+)
+   ============================================ */
+
+@media only screen and (min-width: 1400px) {
+  /* 限制最大宽度 */
+  .wrap {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* 导航字体调整 */
+  .nav-item a {
+    padding: 15px 20px;
+    font-size: 0.95em;
+  }
+
+  /* 更大的标题 */
+  .services h2,
+  .team h2,
+  .Skills h2,
+  .portfolio-grid h2,
+  .about h2,
+  .feedback h2 {
+    font-size: 1.8em;
+  }
+
+  /* 更大的内容字体 */
+  .services_1_of_4 p,
+  .team_1_of_4 p,
+  .list_2_of_1 p {
+    font-size: 1.05em;
+  }
+}
+
+/* ============================================
+   Print Styles
+   ============================================ */
+
+@media print {
+  /* 隐藏不需要的元素 */
+  .header-top,
+  .nav,
+  #w3-menu-trigger,
+  .button,
+  .social_networks,
+  #filters {
+    display: none !important;
+  }
+
+  /* 优化打印布局 */
+  body {
+    background: white;
+    color: black;
+  }
+
+  .wrap {
+    max-width: 100%;
+    padding: 0;
+  }
+
+  /* 确保所有内容可见 */
+  .grid_1_of_4,
+  .listview_1_of_2,
+  .listimg_2_of_1,
+  #portfoliolist .portfolio {
+    float: none;
+    width: 100%;
+    margin: 10px 0;
+    page-break-inside: avoid;
+  }
+
+  /* 添加分页符 */
+  .services,
+  .team,
+  .Skills,
+  .portfolio-grid,
+  .about,
+  .feedback {
+    page-break-after: always;
+  }
+
+  /* 优化图片打印 */
+  img {
+    max-width: 100%;
+    height: auto;
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================
+   Touch Device Optimizations
+   ============================================ */
+
+/* 触摸设备的 hover 效果 */
+@media (hover: none) and (pointer: coarse) {
+  /* 移除 hover 效果，改用 tap 效果 */
+  .nav-item a:hover,
+  .services_1_of_4 img:hover,
+  .team_1_of_4 img:hover {
+    background: transparent;
+  }
+
+  /* 添加 tap 高亮 */
+  .nav-item a:active,
+  .button a:active,
+  .feedback input[type="submit"]:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+  }
+
+  /* 确保触摸目标足够大 */
+  .nav-item a {
+    min-height: 44px;
+    padding: 12px 15px;
+  }
+
+  .button a {
+    min-height: 44px;
+    padding: 15px 24px;
+  }
+
+  .feedback input[type="submit"] {
+    min-height: 44px;
+    padding: 15px 24px;
+  }
+}
+
+/* ============================================
+   UX Improvements
+   ============================================ */
+
+/* 为所有链接添加焦点样式 */
+a:focus {
+  outline: 2px solid #30bae7;
+  outline-offset: 2px;
+}
+
+/* 为按钮添加键盘导航支持 */
+button:focus,
+input[type="submit"]:focus {
+  outline: 2px solid #30bae7;
+  outline-offset: 2px;
+}
+
+/* 优化表单输入框 */
+input[type="text"],
+input[type="email"],
+textarea,
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+}
+
+/* 添加 loading 状态 */
+* {
+  -webkit-transition: all 0.2s ease;
+  -moz-transition: all 0.2s ease;
+  -o-transition: all 0.2s ease;
+  transition: all 0.2s ease;
+}
+
+/* 优化滚动行为 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 添加回到顶部按钮 */
+.back-to-top {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: #87509c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
+
+.back-to-top:hover {
+  background: #643a79;
+}
+
+.back-to-top.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.back-to-top::before {
+  content: "↑";
+  font-size: 24px;
+}

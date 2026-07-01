@@ -17,9 +17,15 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 		content="Cuda Portfolio Iphone web template, Andriod web template, Smartphone web template, free webdesigns for Nokia, Samsung, LG, SonyErricsson, Motorola web design" />
 	<!-- Google Fonts - 本地備用字型 -->
 	<link href="smartphone/css/style.css" rel="stylesheet" type="text/css" media="all" />
+	<link href="smartphone/css/rwd-optimized.css" rel="stylesheet" type="text/css" media="all" />
 	<style>
 		/* 如果 Google Fonts 无法加载，使用系统字体 */
 		@import url('https://fonts.googleapis.com/css?family=Titillium+Web:400,300,600,700');
+		
+		/* 现代字体备选方案 */
+		body {
+			font-family: 'Titillium Web', 'Segoe UI', 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+		}
 	</style>
 	<script type="text/javascript" src="smartphone/js/jquery.min.js"></script>
 	<!-- Add fancyBox main JS and CSS files -->
@@ -571,9 +577,13 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 	</div>
 	<div class="copy-right">
 		<div class="wrap">
-			<p class="copy">© 2014 John <a href="index.html#" target="_blank">履歷</a> </p>
+			<p class="copy">© 2024 John <a href="index.html#" target="_blank">履歷</a> </p>
 		</div>
 	</div>
+	
+	<!-- 回到頂部按鈕 -->
+	<button class="back-to-top" aria-label="回到頂部" onclick="scrollToTop()">↑ TOP</button>
+	
 	<script src="smartphone/js/jquery.scrollTo.js"></script>
 	<script src="smartphone/js/jquery.nav.js"></script>
 	<script>
@@ -586,6 +596,65 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 					console.log('stop')
 				}
 			});
+			
+			// 回到顶部功能
+			window.addEventListener('scroll', toggleBackToTop);
+			
+			// 移动端导航修复
+			fixMobileNavigation();
+		});
+		
+		// 回到顶部按钮显示/隐藏
+		function toggleBackToTop() {
+			const backToTop = document.querySelector('.back-to-top');
+			if (window.pageYOffset > 300) {
+				backToTop.classList.add('visible');
+			} else {
+				backToTop.classList.remove('visible');
+			}
+		}
+		
+		// 点击回到顶部
+		function scrollToTop() {
+			window.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
+		}
+		
+		// 修复移动端导航
+		function fixMobileNavigation() {
+			const menuTrigger = document.getElementById('w3-menu-trigger');
+			const navList = document.getElementById('nav');
+			
+			if (menuTrigger && navList) {
+				menuTrigger.addEventListener('click', function(e) {
+					e.preventDefault();
+					navList.classList.toggle('active');
+				});
+				
+				// 点击导航链接后自动关闭菜单
+				const navLinks = navList.querySelectorAll('.nav-item a');
+				navLinks.forEach(link => {
+					link.addEventListener('click', function() {
+						if (window.innerWidth <= 768) {
+							navList.classList.remove('active');
+						}
+					});
+				});
+				
+				// 点击页面其他区域关闭菜单
+				document.addEventListener('click', function(e) {
+					if (!menuTrigger.contains(e.target) && !navList.contains(e.target)) {
+						navList.classList.remove('active');
+					}
+				});
+			}
+		}
+		
+		// 页面加载完成后检查一下
+		window.addEventListener('load', function() {
+			toggleBackToTop();
 		});
 	</script>
 </body>
