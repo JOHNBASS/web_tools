@@ -555,17 +555,28 @@ function updateResultsTable(results) {
     tableBody.innerHTML = '';
     const dataToShow = showMonthly ? results : filterYearlyResults(results);
     
-    dataToShow.forEach(result => {
+    dataToShow.forEach((result, index) => {
         const year = result.year || Math.floor((result.month || 1) / 12) + 1;
         const month = showMonthly ? result.month || 1 : year;
+        
+        // 计算当期投资收益（扣除加码后的实际收益）
+        const prevResult = index > 0 ? dataToShow[index - 1] : null;
+        const prevInvestmentAsset = prevResult?.investmentAsset || 0;
+        const prevContribution = prevResult?.contribution || 0;
+        const investmentGain = (result.investmentAsset || 0) - prevInvestmentAsset - (result.contribution || 0);
+        const yearlyNetProfit = investmentGain - (result.interestPaid || 0);
+        
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${showMonthly ? '第 ' + month + ' 月' : '第 ' + year + ' 年'}</td>
             <td>${formatCurrency(result.investmentAsset || 0)}</td>
             <td class="${result.investmentReturn > 0 ? 'text-success' : result.investmentReturn < 0 ? 'text-danger' : ''}">
                 ${formatPercentage(result.investmentReturn || 0)}</td>
+            <td>${formatCurrency(result.loanPayment || 0)}</td>
             <td>${formatCurrency(result.interestPaid || 0)}</td>
             <td>${formatCurrency(result.principalPaid || 0)}</td>
+            <td class="${yearlyNetProfit > 0 ? 'text-success' : yearlyNetProfit < 0 ? 'text-danger' : ''}">
+                ${formatCurrency(yearlyNetProfit)}</td>
             <td>${formatCurrency(result.remainingLoan || 0)}</td>
             <td class="${result.netWorth > 0 ? 'text-success' : result.netWorth < 0 ? 'text-danger' : ''}">
                 ${formatCurrency(result.netWorth || 0)}</td>
