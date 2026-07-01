@@ -6,7 +6,23 @@ let simulationResults = [];
 let currentTheme = 'light';
 
 // Initialize App
-document.addEventListener('DOMContentLoaded', initializeApp);
+document.addEventListener('DOMContentLoaded', function() {
+    // Ensure Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js not loaded!');
+        // Create a fallback script tag
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = initializeApp;
+        script.onerror = function() {
+            console.error('Failed to load Chart.js');
+            initializeApp();
+        };
+        document.head.appendChild(script);
+    } else {
+        initializeApp();
+    }
+});
 
 function initializeApp() {
     const savedTheme = localStorage.getItem('theme') || 'light';
