@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeverageLab - 信用槓桿投資模擬器</title>
+    <meta name="description" content="模擬借貸、投資、提前還款與風險，找到適合自己的槓桿策略。回答：借錢投資，到底值不值得？">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div>
+                <h1>💰 LeverageLab - 信用槓桿投資模擬器</h1>
+                <p>模擬借貸、投資、提前還款與風險，找到適合自己的槓桿策略</p>
+            </div>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 切換主題</button>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="container">
+            <!-- Dashboard Overview -->
+            <section class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <span class="icon">📊</span>
+                        即時概覽
+                    </h2>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <div class="dashboard-card-icon primary">💰</div>
+                            <span class="dashboard-card-title">目前淨資產</span>
+                        </div>
+                        <div class="dashboard-card-value" id="netWorthDisplay">$ 0</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <div class="dashboard-card-icon secondary">📈</div>
+                            <span class="dashboard-card-title">投資資產</span>
+                        </div>
+                        <div class="dashboard-card-value" id="investmentAssetDisplay">$ 0</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <div class="dashboard-card-icon success">🏦</div>
+                            <span class="dashboard-card-title">剩餘貸款</span>
+                        </div>
+                        <div class="dashboard-card-value" id="remainingLoanDisplay">$ 0</div>
+                    </div>
+                    <div class="dashboard-card">
+                        <div class="dashboard-card-header">
+                            <div class="dashboard-card-icon warning">⚠</div>
+                            <span class="dashboard-card-title">槓桿倍數</span>
+                        </div>
+                        <div class="dashboard-card-value" id="riskIndexDisplay">0x</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Tabs -->
+            <section class="section">
+                <div class="tabs">
+                    <button class="tab active" data-tab="inputs">📝 輸入資料</button>
+                    <button class="tab" data-tab="results">📈 模擬結果</button>
+                    <button class="tab" data-tab="comparison">⚖️ 策略比較</button>
+                    <button class="tab" data-tab="analysis">🔍 風險分析</button>
+                    <button class="tab" data-tab="montecarlo">🎲 蒙地卡羅</button>
+                    <button class="tab" data-tab="ai">🤖 AI建議</button>
+                </div>
+
+                <!-- Inputs Tab -->
+                <div id="inputs" class="tab-content active">
+                    <!-- Loan Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🏦 貸款資訊</h3>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>貸款金額</label>
+                                <input type="number" id="loanAmount" class="form-control" placeholder="例如：10,000,000" value="10000000">
+                            </div>
+                            <div class="form-group">
+                                <label>年利率</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="annualRate" class="form-control" placeholder="例如：2.8" value="2.8" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>貸款年限</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="loanYears" class="form-control" placeholder="例如：20" value="20">
+                                    <span>年</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>還款方式</label>
+                                <select id="repaymentType" class="form-control">
+                                    <option value="pi">本息平均攤還</option>
+                                    <option value="principal">本金平均攤還</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>寬限期</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="gracePeriod" class="form-control" placeholder="例如：2" value="0">
+                                    <span>年</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>提前清償違約金</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="prepaymentPenalty" class="form-control" placeholder="例如：1" value="0" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Investment Information -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 投資資訊</h3>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>初始投資本金</label>
+                                <input type="number" id="initialInvestment" class="form-control" placeholder="例如：5,000,000" value="5000000">
+                            </div>
+                            <div class="form-group">
+                                <label>平均年化報酬率</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="avgReturn" class="form-control" placeholder="例如：10" value="10" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>每年波動率</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="volatility" class="form-control" placeholder="例如：20" value="20" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>每月加碼</label>
+                                <input type="number" id="monthlyContribution" class="form-control" placeholder="例如：50,000" value="50000">
+                            </div>
+                            <div class="form-group">
+                                <label>每年加碼</label>
+                                <input type="number" id="annualContribution" class="form-control" placeholder="例如：600,000" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>複利計算</label>
+                                <label class="switch">
+                                    <input type="checkbox" id="compoundInterest" checked>
+                                    <span class="slider-switch"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Investment Mode -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🎯 投資模式</h3>
+                        </div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="investmentMode" value="fixed" checked>
+                                <span>固定年化</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="investmentMode" value="random">
+                                <span>隨機波動</span>
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="radio" name="investmentMode" value="custom">
+                                <span>自訂績效</span>
+                            </label>
+                        </div>
+
+                        <div id="customPerformanceSection" style="display: none;">
+                            <div class="form-grid" id="customReturnsContainer">
+                                <div class="form-group">
+                                    <label>2026年報酬率</label>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" class="form-control custom-year" data-year="2026" placeholder="10" value="10">
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>2027年報酬率</label>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" class="form-control custom-year" data-year="2027" placeholder="15" value="15">
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>2028年報酬率</label>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" class="form-control custom-year" data-year="2028" placeholder="-10" value="-10">
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>2029年報酬率</label>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <input type="number" class="form-control custom-year" data-year="2029" placeholder="25" value="25">
+                                        <span>%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-secondary mt-2" onclick="addCustomYear()">+ 新增年份</button>
+                        </div>
+                    </div>
+
+                    <!-- Allocation Strategy -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">⚖️ 收益分配策略</h3>
+                        </div>
+                        <p style="margin-bottom: 1rem; color: var(--text-muted);">
+                            拖動滑桿決定投資收益的分配比例：
+                        </p>
+                        <div style="margin-bottom: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                <span>全部投資</span>
+                                <span id="allocationValue">50%</span>
+                                <span>全部還本金</span>
+                            </div>
+                            <input type="range" id="allocationSlider" class="slider" min="0" max="100" value="50" 
+                                   oninput="updateAllocation(this.value)">
+                            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                                <span>投資收益 0%</span>
+                                <span>提前還本金 100%</span>
+                            </div>
+                        </div>
+
+                        <div class="grid-3">
+                            <button class="btn btn-primary" onclick="setAllocation(100)">全部投資</button>
+                            <button class="btn btn-secondary" onclick="setAllocation(50)">50-50</button>
+                            <button class="btn btn-secondary" onclick="setAllocation(0)">全部還本金</button>
+                        </div>
+                    </div>
+
+                    <!-- Early Repayment Analysis -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">💵 提前還款分析</h3>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>提前還款金額</label>
+                                <input type="number" id="earlyRepaymentAmount" class="form-control" placeholder="例如：100,000" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label>提前還款年份</label>
+                                <input type="number" id="earlyRepaymentYear" class="form-control" placeholder="例如：5" value="0" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card">
+                        <div class="btn-group" style="gap: 1rem; flex-wrap: wrap;">
+                            <button class="btn btn-primary" onclick="calculate()">
+                                <span>🔄 開始模擬</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetForm()">
+                                <span>🔄 重設</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="loadSample('conservative')">
+                                <span>🐢 保守型範例</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="loadSample('aggressive')">
+                                <span>🚀 激進型範例</span>
+                            </button>
+                            <button class="btn btn-secondary" onclick="loadSample('balanced')">
+                                <span>⚖️ 平衡型範例</span>
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <label class="switch" style="display: flex; align-items: center; gap: 0.5rem;">
+                                <span>自動儲存設定</span>
+                                <input type="checkbox" id="autoSave" checked onchange="toggleAutoSave()">
+                                <span class="slider-switch"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p>正在進行蒙地卡羅模擬...</p>
+                    </div>
+                </div>
+
+                <!-- Results Tab -->
+                <div id="results" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 模擬結果摘要</h3>
+                        </div>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <div class="result-label">總投資收益</div>
+                                <div class="result-value success" id="totalReturn">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">總利息支出</div>
+                                <div class="result-value danger" id="totalInterest">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">淨收益</div>
+                                <div class="result-value" id="netProfit">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">槓桿倍數</div>
+                                <div class="result-value" id="leverageRatio">0x</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 逐年詳細資料</h3>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="showMonthly" onchange="updateTable()">
+                                <span>顯示逐月資料</span>
+                            </label>
+                        </div>
+                        <div class="table-container">
+                            <table id="resultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>年份</th>
+                                        <th>投資資產</th>
+                                        <th>投資收益</th>
+                                        <th>利息支出</th>
+                                        <th>還本金</th>
+                                        <th>剩餘貸款</th>
+                                        <th>淨資產</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 視覺化圖表</h3>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 1rem;">資產與貸款走勢</h4>
+                                <div class="chart-container">
+                                    <canvas id="assetLoanChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="text-align: center; margin-bottom: 1rem;">淨資產成長</h4>
+                                <div class="chart-container">
+                                    <canvas id="netWorthChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Strategy Comparison Tab -->
+                <div id="comparison" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">⚖️ 策略比較</h3>
+                            <p style="margin: 0; color: var(--text-muted);">比較三種不同的收益分配策略</p>
+                        </div>
+                        <div class="strategy-grid">
+                            <div class="strategy-card active" data-strategy="allInvest">
+                                <div class="strategy-name">🚀 全部投資</div>
+                                <div class="strategy-description">將所有收益繼續投資，最大化複利效果</div>
+                                <div class="result-value" id="strategyAllInvest">$ 0</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                                    最終淨資產
+                                </div>
+                            </div>
+                            <div class="strategy-card" data-strategy="halfHalf">
+                                <div class="strategy-name">⚖️ 50-50策略</div>
+                                <div class="strategy-description">收益一半投資，一半提前還本金</div>
+                                <div class="result-value" id="strategyHalfHalf">$ 0</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                                    最終淨資產
+                                </div>
+                            </div>
+                            <div class="strategy-card" data-strategy="allRepay">
+                                <div class="strategy-name">🛡️ 全部還本金</div>
+                                <div class="strategy-description">將所有收益提前還本金，降低風險</div>
+                                <div class="result-value" id="strategyAllRepay">$ 0</div>
+                                <div style="margin-top: 0.5rem; font-size: 0.875rem; color: var(--text-muted);">
+                                    最終淨資產
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1.5rem;">
+                            <button class="btn btn-primary" onclick="runStrategyComparison()">🔄 運行策略比較</button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 策略比較圖表</h3>
+                        </div>
+                        <div class="chart-container" style="height: 450px;">
+                            <canvas id="strategyComparisonChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 策略比較表</h3>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>策略</th>
+                                        <th>最終淨資產</th>
+                                        <th>總投資收益</th>
+                                        <th>總利息支出</th>
+                                        <th>槓桿倍數</th>
+                                        <th>風險等級</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="strategyComparisonTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Analysis Tab -->
+                <div id="analysis" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">⚠️ 風險分析</h3>
+                        </div>
+                        <div id="riskAlert" class="alert" style="display: none;">
+                            <span class="alert-icon">⚠️</span>
+                            <div>
+                                <strong>風險警示</strong>
+                                <p id="riskMessage">目前投資策略風險較高，建議調整分配比例</p>
+                            </div>
+                        </div>
+
+                        <div class="grid-2">
+                            <div>
+                                <h4 style="margin-bottom: 1rem;">📉 最壞情況模擬</h4>
+                                <div class="form-group">
+                                    <label>投資跌幅</label>
+                                    <select id="worstCaseScenario" class="form-control" onchange="updateWorstCase()">
+                                        <option value="10">-10%</option>
+                                        <option value="20">-20%</option>
+                                        <option value="30">-30%</option>
+                                        <option value="40">-40%</option>
+                                        <option value="50" selected>-50%</option>
+                                        <option value="60">-60%</option>
+                                        <option value="70">-70%</option>
+                                    </select>
+                                </div>
+                                <div class="results-grid" style="margin-top: 1rem;">
+                                    <div class="result-card">
+                                        <div class="result-label">投資資產</div>
+                                        <div class="result-value" id="worstCaseInvestment">$ 0</div>
+                                    </div>
+                                    <div class="result-card">
+                                        <div class="result-label">剩餘貸款</div>
+                                        <div class="result-value" id="worstCaseLoan">$ 0</div>
+                                    </div>
+                                    <div class="result-card">
+                                        <div class="result-label">淨資產</div>
+                                        <div class="result-value" id="worstCaseNetWorth">$ 0</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 1rem;">📈 最佳情況模擬</h4>
+                                <div class="form-group">
+                                    <label>投資漲幅</label>
+                                    <select id="bestCaseScenario" class="form-control" onchange="updateBestCase()">
+                                        <option value="50">+50%</option>
+                                        <option value="100">+100%</option>
+                                        <option value="150">+150%</option>
+                                        <option value="200" selected>+200%</option>
+                                        <option value="300">+300%</option>
+                                    </select>
+                                </div>
+                                <div class="results-grid" style="margin-top: 1rem;">
+                                    <div class="result-card">
+                                        <div class="result-label">投資資產</div>
+                                        <div class="result-value success" id="bestCaseInvestment">$ 0</div>
+                                    </div>
+                                    <div class="result-card">
+                                        <div class="result-label">剩餘貸款</div>
+                                        <div class="result-value" id="bestCaseLoan">$ 0</div>
+                                    </div>
+                                    <div class="result-card">
+                                        <div class="result-label">淨資產</div>
+                                        <div class="result-value success" id="bestCaseNetWorth">$ 0</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🎚️ 敏感度分析</h3>
+                        </div>
+                        <div class="grid-2">
+                            <div>
+                                <h4 style="margin-bottom: 1rem;">利率敏感度</h4>
+                                <div class="form-group">
+                                    <label>利率範圍</label>
+                                    <input type="range" id="interestSensitivity" class="slider" min="1" max="10" value="5" step="0.5"
+                                           oninput="updateSensitivity('interest', this.value)">
+                                    <span class="slider-value" id="interestSensitivityValue">5%</span>
+                                </div>
+                                <div style="margin-top: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span>低利率</span>
+                                        <span>高利率</span>
+                                    </div>
+                                    <div class="results-grid">
+                                        <div class="result-card">
+                                            <div class="result-label">淨資產 (低利率)</div>
+                                            <div class="result-value" id="sensitivityLowInterest">$ 0</div>
+                                        </div>
+                                        <div class="result-card">
+                                            <div class="result-label">淨資產 (高利率)</div>
+                                            <div class="result-value" id="sensitivityHighInterest">$ 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 style="margin-bottom: 1rem;">報酬率敏感度</h4>
+                                <div class="form-group">
+                                    <label>報酬率範圍</label>
+                                    <input type="range" id="returnSensitivity" class="slider" min="-30" max="30" value="0" step="5"
+                                           oninput="updateSensitivity('return', this.value)">
+                                    <span class="slider-value" id="returnSensitivityValue">0%</span>
+                                </div>
+                                <div style="margin-top: 1rem;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                                        <span>低報酬</span>
+                                        <span>高報酬</span>
+                                    </div>
+                                    <div class="results-grid">
+                                        <div class="result-card">
+                                            <div class="result-label">淨資產 (低報酬)</div>
+                                            <div class="result-value" id="sensitivityLowReturn">$ 0</div>
+                                        </div>
+                                        <div class="result-card">
+                                            <div class="result-label">淨資產 (高報酬)</div>
+                                            <div class="result-value" id="sensitivityHighReturn">$ 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monte Carlo Tab -->
+                <div id="montecarlo" class="tab-content">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">🎲 蒙地卡羅模擬</h3>
+                            <p style="margin: 0; color: var(--text-muted);">模擬大量可能的投資路徑</p>
+                        </div>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>模擬次數</label>
+                                <input type="number" id="mcSimulations" class="form-control" value="10000" min="100" max="100000">
+                            </div>
+                            <div class="form-group">
+                                <label>模擬年限</label>
+                                <input type="number" id="mcYears" class="form-control" value="20" min="1" max="30">
+                            </div>
+                            <div class="form-group">
+                                <label>平均報酬率</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="mcAvgReturn" class="form-control" value="10" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>波動率</label>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="number" id="mcVolatility" class="form-control" value="20" step="0.01">
+                                    <span>%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" onclick="runMonteCarlo()">🎲 運行蒙地卡羅模擬</button>
+                        </div>
+                    </div>
+
+                    <div class="loading" id="mcLoading">
+                        <div class="spinner"></div>
+                        <p>正在進行蒙地卡羅模擬，請稍等...</p>
+                    </div>
+
+                    <div class="card" id="mcResults" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 模擬結果</h3>
+                        </div>
+                        <div class="results-grid">
+                            <div class="result-card">
+                                <div class="result-label">平均最終淨資產</div>
+                                <div class="result-value" id="mcAverage">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">中位數淨資產</div>
+                                <div class="result-value" id="mcMedian">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">最佳結果</div>
+                                <div class="result-value success" id="mcBest">$ 0</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">最壞結果</div>
+                                <div class="result-value danger" id="mcWorst">$ 0</div>
+                            </div>
+                        </div>
+                        <div class="results-grid" style="margin-top: 1rem;">
+                            <div class="result-card">
+                                <div class="result-label">成功率 (淨資產 > 0)</div>
+                                <div class="result-value success" id="mcSuccessRate">0%</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">資不抵債率</div>
+                                <div class="result-value danger" id="mcBankruptcyRate">0%</div>
+                            </div>
+                            <div class="result-card">
+                                <div class="result-label">標準差</div>
+                                <div class="result-value" id="mcStdDev">$ 0</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="mcCharts" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">📈 分佈圖</h3>
+                        </div>
+                        <div class="chart-container" style="height: 400px;">
+                            <canvas id="mcDistributionChart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card" id="mcPercentiles" style="display: none;">
+                        <div class="card-header">
+                            <h3 class="card-title">📊 百分位數分析</h3>
+                        </div>
+                        <div class="table-container">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>百分位</th>
+                                        <th>淨資產</th>
+                                        <th>累積機率</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mcPercentileTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Suggestion Tab -->
+                <div id="ai" class="tab-content">
+                    <div class="ai-section">
+                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem;">
+                            <div class="ai-avatar">🤖</div>
+                            <div>
+                                <h3 style="color: var(--text); font-size: 1.5rem; margin-bottom: 0.25rem;">AI 螢屏投資顧問</h3>
+                                <p style="color: var(--text-muted);">基於您的輸入數據提供個性化建議</p>
+                            </div>
+                        </div>
+                        <div class="ai-message">
+                            <p><strong>正在分析您的槓桿投資策略...</strong></p>
+                            <p style="margin-top: 0.5rem;">請先完成模擬計算，AI 將提供專業建議。</p>
+                        </div>
+                        <div id="aiAnalysis" style="display: none; margin-top: 1.5rem;">
+                            <h4 style="margin-bottom: 1rem;">📊 AI 分析報告</h4>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <div class="result-label">目前槓桿倍數</div>
+                                    <div class="result-value" id="aiLeverage">0x</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-label">20年後預估資產</div>
+                                    <div class="result-value" id="aiProjectedAssets">$ 0</div>
+                                </div>
+                                <div class="result-card">
+                                    <div class="result-label">資不抵債機率</div>
+                                    <div class="result-value" id="aiBankruptcyProb">0%</div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 1.5rem;">
+                                <h4>💡 AI 建議</h4>
+                                <div id="aiRecommendation" style="margin-top: 0.5rem;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer style="text-align: center; padding: 2rem; color: var(--text-muted); border-top: 1px solid var(--border); margin-top: 2rem;">
+        <p>© 2025 LeverageLab - 信用槓桿投資模擬器 | 純前端工具，資料儲存於瀏覽器本地 | 免費使用，無需註冊</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
