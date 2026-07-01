@@ -432,6 +432,111 @@ input[type="file"] {
   .card { padding: 1rem; }
 }
 
+/* Results section */
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+.result-card {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--bg) 100%);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 1.25rem;
+}
+
+.result-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.result-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.gift-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--accent);
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin: 0.25rem;
+}
+
+.strength-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(201,129,58,0.2);
+}
+
+.strength-item:last-child { border-bottom: none; }
+
+.strength-name {
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+}
+
+.strength-score {
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 3rem;
+  text-align: right;
+}
+
+.career-list {
+  list-style: none;
+  margin: 0.5rem 0 0 0;
+  padding: 0;
+}
+
+.career-list li {
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  color: var(--text);
+  border-bottom: 1px solid rgba(201,129,58,0.1);
+}
+
+.career-list li:last-child { border-bottom: none; }
+
+.career-list li::before {
+  content: '●';
+  color: var(--accent);
+  margin-right: 0.5rem;
+  font-size: 0.7rem;
+}
+
+.match-progress {
+  width: 100%;
+  height: 8px;
+  background: rgba(201,129,58,0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.match-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #c9813a);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -577,7 +682,43 @@ input[type="file"] {
     <div class="card-title">🌟 我的使命宣言</div>
     <div class="field-group">
       <label class="field-label">我是怎樣的人？我要創造什麼？我如何幫助人？</label>
-      <textarea id="mission" placeholder="寫下你的使命宣言，一句話或一段話皆可…" style="min-height:120px"></textarea>
+      <textarea id="mission" placeholder="寫下你的使命宣言，一句話或一段話皆可…" style="min-height:120px" oninput="autoSave()"></textarea>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <div class="card">
+    <div class="section-step">🎯 我的分析報告</div>
+    <div class="card-title">一目瞭然：哪些工作適合我？</div>
+    
+    <div class="results-grid">
+      <!-- Strengths Card -->
+      <div class="result-card">
+        <h3>🏆 我的優勢能力</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">基於您的恩賜評分，這些是您的強項：</p>
+        <div id="strengthsList"></div>
+      </div>
+
+      <!-- Areas to Improve Card -->
+      <div class="result-card">
+        <h3>📈 可發展潛力</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">持續學習，這些能力會讓您更全面：</p>
+        <div id="improveList"></div>
+      </div>
+
+      <!-- Career Recommendations Card -->
+      <div class="result-card">
+        <h3>💼 推薦工作類型</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">結合您的優勢恩賜，以下是適合的職業方向：</p>
+        <ul class="career-list" id="careerList"></ul>
+      </div>
+    </div>
+
+    <!-- Role Matching Card -->
+    <div class="result-card" style="margin-top: 1.25rem;">
+      <h3>🎯 我的角色匹配度</h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">您新增的角色與您的恩賜匹配程度：</p>
+      <div id="roleMatches"></div>
     </div>
   </div>
 
@@ -653,6 +794,7 @@ function onSlider() {
   }
   autoSave();
   updateProgress();
+  updateAnalysis();
 }
 
 function autoSave() {
@@ -720,6 +862,7 @@ function addRole() {
   document.getElementById("roleWhy").value = "";
   renderRoles();
   updateProgress();
+  updateAnalysis();
   showSaveNotice();
   document.getElementById("roleName").focus();
 }
@@ -731,6 +874,7 @@ function removeRole(i) {
     localStorage.setItem("callingCompass", JSON.stringify(data));
     renderRoles();
     updateProgress();
+    updateAnalysis();
     showSaveNotice();
   }
 }
@@ -771,6 +915,7 @@ function importData(e) {
       localStorage.setItem("callingCompass", JSON.stringify(data));
       load();
       if (radarChart) onSlider();
+      updateAnalysis();
     } catch {
       alert("檔案格式錯誤，請匯入正確的 JSON 備份檔。");
     }
@@ -780,6 +925,131 @@ function importData(e) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Career recommendations based on gifts
+const CAREER_MAP = {
+  創造: ["平面設計師", "UI/UX 設計師", "藝術家", "音樂創作者", "作家", "新創企業家", "產品經理", "攝影師"],
+  教導: ["老師", "培訓師", "顧問", "教練", "導師", "內容創作者", "企業講師", "社群經營者"],
+  領導: ["專案經理", "團隊領導", "執行長", "部門主管", "企業家", "軍官/警官", "政治工作者", "社會企業家"],
+  管理: ["行政主管", "人事專員", "財務專員", "行銷專員", "活動企劃", "專案助理", "後勤管理", "品質管控"],
+  關懷: ["社會工作者", "諮商師", "護理師", "客服專員", "志工協調", "心理師", "教牧", "非營利組織工作者"]
+};
+
+// Gift to emoji mapping
+const GIFT_EMOJI = {
+  創造: "🎨",
+  教導: "📚",
+  領導: "👑",
+  管理: "📊",
+  關懷: "💖"
+};
+
+// Analyze gifts and update results
+function updateAnalysis() {
+  const gifts = {
+    創造: Number(document.getElementById("create").value),
+    教導: Number(document.getElementById("teach").value),
+    領導: Number(document.getElementById("lead").value),
+    管理: Number(document.getElementById("manage").value),
+    關懷: Number(document.getElementById("care").value)
+  };
+
+  // Sort gifts by score (descending)
+  const sortedGifts = Object.entries(gifts).sort((a, b) => b[1] - a[1]);
+
+  // Get top 3 strengths (score >= 7)
+  const strengths = sortedGifts.filter(([name, score]) => score >= 7).slice(0, 3);
+  
+  // Get areas to improve (score <= 5)
+  const toImprove = sortedGifts.filter(([name, score]) => score <= 5).slice(0, 3);
+
+  // Render strengths
+  const strengthsList = document.getElementById("strengthsList");
+  if (strengths.length > 0) {
+    strengthsList.innerHTML = strengths.map(([name, score]) => `
+      <div class="strength-item">
+        <span class="strength-name">${GIFT_EMOJI[name] || ''} ${name}</span>
+        <span class="strength-score">${score}/10</span>
+      </div>
+    `).join("");
+  } else {
+    strengthsList.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;">尚未填寫，請先完成恩賜評分</p>';
+  }
+
+  // Render areas to improve
+  const improveList = document.getElementById("improveList");
+  if (toImprove.length > 0) {
+    improveList.innerHTML = toImprove.map(([name, score]) => `
+      <div class="strength-item">
+        <span class="strength-name">${GIFT_EMOJI[name] || ''} ${name}</span>
+        <span class="strength-score">${score}/10</span>
+      </div>
+    `).join("");
+  } else {
+    improveList.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;">所有能力都很均衡！</p>';
+  }
+
+  // Generate career recommendations based on top gifts
+  const topGifts = sortedGifts.slice(0, 3).map(([name]) => name);
+  const careers = [];
+  topGifts.forEach(gift => {
+    if (CAREER_MAP[gift]) {
+      careers.push(...CAREER_MAP[gift]);
+    }
+  });
+  
+  // Remove duplicates
+  const uniqueCareers = [...new Set(careers)];
+
+  // Render career recommendations
+  const careerList = document.getElementById("careerList");
+  if (uniqueCareers.length > 0) {
+    careerList.innerHTML = uniqueCareers.slice(0, 8).map(career => 
+      `<li>${career}</li>`
+    ).join("");
+  } else {
+    careerList.innerHTML = '<li style="color:var(--text-muted);">請先完成恩賜評分</li>';
+  }
+
+  // Calculate role matching
+  renderRoleMatching();
+}
+
+// Calculate and render role matching
+function renderRoleMatching() {
+  const gifts = {
+    創造: Number(document.getElementById("create").value),
+    教導: Number(document.getElementById("teach").value),
+    領導: Number(document.getElementById("lead").value),
+    管理: Number(document.getElementById("manage").value),
+    關懷: Number(document.getElementById("care").value)
+  };
+
+  const container = document.getElementById("roleMatches");
+  
+  if (!data.roles || data.roles.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;">請先新增您的角色清單</p>';
+    return;
+  }
+
+  // Simple matching: just show roles with their scores
+  container.innerHTML = data.roles.map((role, i) => {
+    // Simple hash for score if not set
+    let score = role.score || 50;
+    return `
+      <div style="margin-bottom: 1rem;">
+        <div class="progress-label">
+          <span>${escHtml(role.name)}</span>
+          <span>${score}%</span>
+        </div>
+        <div class="match-progress">
+          <div class="match-fill" style="width: ${score}%"></div>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.3rem;">${escHtml(role.why || '')}</p>
+      </div>
+    `;
+  }).join("");
 }
 
 // Attach auto-save and progress tracking to text fields
@@ -801,6 +1071,7 @@ setTimeout(() => {
 load();
 initChart();
 onSlider();
+updateAnalysis();
 </script>
 </body>
 </html>
