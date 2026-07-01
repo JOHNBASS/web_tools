@@ -1,6 +1,73 @@
-<!DOCTYPE html><html lang=""><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="favicon.ico"><title>qr-code-card-viewer</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"><link href="js/chunk-2d0d5f97.5d37ef8a.js" rel="prefetch"><link href="css/app.6d19776b.css" rel="preload" as="style"><link href="css/chunk-vendors.27ab54b0.css" rel="preload" as="style"><link href="js/app.c2d9f934.js" rel="preload" as="script"><link href="js/chunk-vendors.073e88d9.js" rel="preload" as="script"><link href="css/chunk-vendors.27ab54b0.css" rel="stylesheet"><link href="css/app.6d19776b.css" rel="stylesheet"></head><body><noscript><strong>We're sorry but qr-code-card-viewer doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript><div id="app">
+<!DOCTYPE html><html lang=""><head><meta charset="utf-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" href="favicon.ico"><title>qr-code-card-viewer</title><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"><link href="js/chunk-2d0d5f97.5d37ef8a.js" rel="prefetch"><link href="css/app.6d19776b.css" rel="preload" as="style"><link href="css/chunk-vendors.27ab54b0.css" rel="preload" as="style"><link href="js/app.c2d9f934.js" rel="preload" as="script"><link href="js/chunk-vendors.073e88d9.js" rel="preload" as="script"><link href="css/chunk-vendors.27ab54b0.css" rel="stylesheet"><link href="css/app.6d19776b.css" rel="stylesheet"></head><body><noscript><strong>We're sorry but qr-code-card-viewer doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript>
+
+<!-- 密碼驗證層 -->
+<div id="password-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+  <div style="background: #1a1a2e; padding: 40px; border-radius: 15px; text-align: center; color: white; max-width: 400px; width: 90%;">
+    <h2 style="margin-bottom: 20px; font-size: 24px;">🔒 請輸入密碼</h2>
+    <p style="margin-bottom: 20px; color: #ccc;">此為私人頁面，需輸入正確密碼才能訪問</p>
+    <input type="password" id="password-input" placeholder="請輸入密碼" style="width: 100%; padding: 12px; margin-bottom: 15px; border: none; border-radius: 8px; font-size: 16px; box-sizing: border-box;">
+    <button onclick="checkPassword()" style="background: linear-gradient(45deg, #ff6b6b, #ee5a24); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%;">
+      確認進入
+    </button>
+    <p id="password-error" style="color: #ff6b6b; margin-top: 15px; display: none;">密碼錯誤，請重新輸入！</p>
+  </div>
+</div>
+
+<div id="app" style="display: none;">
   <div style="text-align: center; padding: 50px; color: white; font-family: Arial, sans-serif;">
     <p style="font-size: 18px;">Loading QR碼生日卡片收集...</p>
     <p style="font-size: 12px; opacity: 0.7; margin-top: 10px;">若長時間看到此訊息，請確認JavaScript已啟用</p>
   </div>
-</div><script type="text/javascript" src="js/chunk-vendors.073e88d9.js"></script><script type="text/javascript" src="js/app.c2d9f934.js"></script></body></html>
+</div>
+
+<script>
+// 設定正確密碼（可自行修改）
+const CORRECT_PASSWORD = "unna30";
+
+function checkPassword() {
+  const input = document.getElementById('password-input');
+  const error = document.getElementById('password-error');
+  
+  if (input.value === CORRECT_PASSWORD) {
+    // 密碼正確，隱藏密碼層，顯示應用
+    document.getElementById('password-overlay').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    
+    // 加載 Vue 應用
+    loadVueApp();
+  } else {
+    // 密碼錯誤
+    error.style.display = 'block';
+    input.value = '';
+    input.focus();
+    setTimeout(() => {
+      error.style.display = 'none';
+    }, 2000);
+  }
+}
+
+function loadVueApp() {
+  // 加載 Vue 相關的 JS 文件
+  const vendorScript = document.createElement('script');
+  vendorScript.src = 'js/chunk-vendors.073e88d9.js';
+  vendorScript.onload = function() {
+    const appScript = document.createElement('script');
+    appScript.src = 'js/app.c2d9f934.js';
+    document.body.appendChild(appScript);
+  };
+  document.body.appendChild(vendorScript);
+}
+
+// 監聽 Enter 鍵
+window.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    checkPassword();
+  }
+});
+
+// 自動聚焦到密碼輸入框
+window.addEventListener('load', function() {
+  document.getElementById('password-input').focus();
+});
+</script>
+</body></html>
