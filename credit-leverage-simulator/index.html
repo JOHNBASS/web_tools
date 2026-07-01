@@ -331,7 +331,7 @@
                         </div>
                         <div style="margin-bottom: 1rem;">
                             <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-                                <input type="checkbox" id="showMonthly" onchange="updateTable()">
+                                <input type="checkbox" id="showMonthly" onchange="updateTable(); calculate()">
                                 <span>顯示逐月資料</span>
                             </label>
                         </div>
@@ -341,11 +341,12 @@
                                     <tr>
                                         <th>年份</th>
                                         <th>投資資產</th>
-                                        <th>投資收益</th>
+                                        <th>投資收益率</th>
                                         <th>月摊還金額</th>
-                                        <th>利息支出</th>
-                                        <th>還本金</th>
-                                        <th>当年淨收益</th>
+                                        <th>年總利息</th>
+                                        <th>年總還本</th>
+                                        <th>投資收益</th>
+                                        <th>当年淨利</th>
                                         <th>剩餘貸款</th>
                                         <th>淨資產</th>
                                     </tr>

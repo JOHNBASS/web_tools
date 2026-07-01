@@ -559,12 +559,24 @@ function updateResultsTable(results) {
         const year = result.year || Math.floor((result.month || 1) / 12) + 1;
         const month = showMonthly ? result.month || 1 : year;
         
-        // 计算当期投资收益（扣除加码后的实际收益）
+        // 计算当期数据
         const prevResult = index > 0 ? dataToShow[index - 1] : null;
         const prevInvestmentAsset = prevResult?.investmentAsset || 0;
         const prevContribution = prevResult?.contribution || 0;
+        
+        // 当期投资收益（金额）
         const investmentGain = (result.investmentAsset || 0) - prevInvestmentAsset - (result.contribution || 0);
-        const yearlyNetProfit = investmentGain - (result.interestPaid || 0);
+        
+        // 当期净利 = 投资收益 - 利息支出
+        const netProfit = investmentGain - (result.interestPaid || 0);
+        
+        // 如果是逐年显示，计算年总额
+        const monthlyPayment = result.loanPayment || 0;
+        const yearlyPayment = showMonthly ? monthlyPayment : monthlyPayment * 12;
+        const yearlyInterest = showMonthly ? (result.interestPaid || 0) : (result.interestPaid || 0) * 12;
+        const yearlyPrincipal = showMonthly ? (result.principalPaid || 0) : (result.principalPaid || 0) * 12;
+        const yearlyInvestmentGain = showMonthly ? investmentGain : investmentGain * 12;
+        const yearlyNetProfit = showMonthly ? netProfit : netProfit * 12;
         
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -572,11 +584,13 @@ function updateResultsTable(results) {
             <td>${formatCurrency(result.investmentAsset || 0)}</td>
             <td class="${result.investmentReturn > 0 ? 'text-success' : result.investmentReturn < 0 ? 'text-danger' : ''}">
                 ${formatPercentage(result.investmentReturn || 0)}</td>
-            <td>${formatCurrency(result.loanPayment || 0)}</td>
-            <td>${formatCurrency(result.interestPaid || 0)}</td>
-            <td>${formatCurrency(result.principalPaid || 0)}</td>
-            <td class="${yearlyNetProfit > 0 ? 'text-success' : yearlyNetProfit < 0 ? 'text-danger' : ''}">
-                ${formatCurrency(yearlyNetProfit)}</td>
+            <td>${formatCurrency(monthlyPayment)}</td>
+            <td>${formatCurrency(yearlyInterest)}</td>
+            <td>${formatCurrency(yearlyPrincipal)}</td>
+            <td class="${investmentGain > 0 ? 'text-success' : investmentGain < 0 ? 'text-danger' : ''}">
+                ${formatCurrency(investmentGain)}</td>
+            <td class="${netProfit > 0 ? 'text-success' : netProfit < 0 ? 'text-danger' : ''}">
+                ${formatCurrency(netProfit)}</td>
             <td>${formatCurrency(result.remainingLoan || 0)}</td>
             <td class="${result.netWorth > 0 ? 'text-success' : result.netWorth < 0 ? 'text-danger' : ''}">
                 ${formatCurrency(result.netWorth || 0)}</td>
