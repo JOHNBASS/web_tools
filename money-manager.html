@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>金錢好管家 - 薪水規劃</title>
+<title>Money Manager - 薪水規劃</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
@@ -385,7 +385,23 @@ body {
   .card { padding: 1rem; }
 }
 
-/* Fade in */
+/* Save notice */
+.save-notice {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--success);
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+.save-notice.show { display: inline-flex; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
@@ -396,6 +412,7 @@ body {
 .card:nth-child(3) { animation-delay: 0.1s; }
 .card:nth-child(4) { animation-delay: 0.15s; }
 .card:nth-child(5) { animation-delay: 0.2s; }
+.card:nth-child(6) { animation-delay: 0.25s; }
 </style>
 </head>
 <body>
@@ -424,8 +441,9 @@ body {
     <div class="income-section">
       <span class="income-label">每月薪水</span>
       <div class="income-input-wrap">
-        <input id="income" class="income-input" type="number" placeholder="0" min="0">
+        <input id="income" class="income-input" type="number" placeholder="0" min="0" inputmode="numeric" pattern="[0-9]*">
       </div>
+      <span class="save-notice" id="saveNotice">✓ 已自動儲存</span>
     </div>
   </div>
 
@@ -438,6 +456,12 @@ body {
     </div>
     <div id="list"></div>
     <button class="add-btn" onclick="addItem()">＋ 新增支出項目</button>
+    <div class="btn-group" style="margin-top: 0.75rem; gap: 0.75rem;">
+      <button class="btn btn-outline" onclick="exportData()" style="padding: 0.5rem 1rem; font-size: 0.85rem; border: 1.5px solid var(--border); background: transparent; color: var(--primary); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">⬇️ 匯出 JSON</button>
+      <button class="btn btn-outline" onclick="importData()" style="padding: 0.5rem 1rem; font-size: 0.85rem; border: 1.5px solid var(--border); background: transparent; color: var(--primary); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">⬆️ 匯入備份</button>
+      <button class="btn btn-outline" onclick="resetData()" style="padding: 0.5rem 1rem; font-size: 0.85rem; border: 1.5px solid var(--danger); background: transparent; color: var(--danger); border-radius: var(--radius-sm); cursor: pointer; transition: all 0.2s;">🗑️ 重設資料</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" onchange="handleImport(event)" style="display: none;">
   </div>
 
   <div class="card">
@@ -484,11 +508,19 @@ const defaultItems = [
 ];
 
 let data = JSON.parse(localStorage.getItem("moneyManager")) || { income: 0, items: defaultItems };
-
 let chart;
+let saveTimeout;
+
+function showSaveNotice() {
+  const notice = document.getElementById("saveNotice");
+  notice.classList.add("show");
+  clearTimeout(window.saveTimeout);
+  window.saveTimeout = setTimeout(() => notice.classList.remove("show"), 2000);
+}
 
 function save() {
   localStorage.setItem("moneyManager", JSON.stringify(data));
+  showSaveNotice();
 }
 
 function render() {
@@ -500,14 +532,70 @@ function render() {
     const div = document.createElement("div");
     div.className = "item";
     div.innerHTML = `
-      <input type="text" value="${escHtml(item[0])}" placeholder="項目名稱" onchange="changeName(${index}, this.value)">
-      <input type="number" value="${item[1]}" placeholder="0" min="0" onchange="changeMoney(${index}, this.value)">
-      <button class="item-delete" onclick="removeItem(${index})" title="刪除">✕</button>
+      <input type="text" value="${escHtml(item[0])}" placeholder="項目名稱" 
+             onchange="changeName(${index}, this.value)" 
+             onkeydown="handleItemKeyDown(${index}, event)">
+      <input type="number" value="${item[1]}" placeholder="0" min="0" 
+             onchange="changeMoney(${index}, this.value)" 
+             onkeydown="handleItemKeyDown(${index}, event)" 
+             inputmode="numeric" pattern="[0-9]*">
+      <button class="item-delete" onclick="confirmRemoveItem(${index})" title="刪除">✕</button>
     `;
     list.appendChild(div);
   });
 
   calculate();
+  
+  // Auto-focus first empty or new item
+  setTimeout(() => {
+    const emptyNameInputs = document.querySelectorAll('#list .item input[type="text"]');
+    for (let i = emptyNameInputs.length - 1; i >= 0; i--) {
+      if (!emptyNameInputs[i].value.trim()) {
+        emptyNameInputs[i].focus();
+        break;
+      }
+    }
+    if (emptyNameInputs.length === 0 && !document.getElementById("income").value) {
+      document.getElementById("income").focus();
+    }
+  }, 100);
+}
+
+function handleItemKeyDown(index, event) {
+  // Enter on amount input: move to next item or add new
+  if (event.key === "Enter") {
+    const inputs = document.querySelectorAll('#list .item input');
+    const currentIndex = Array.from(inputs).indexOf(event.target);
+    
+    if (event.target.type === "text") {
+      // Move to amount input of same item
+      const amountInput = event.target.nextElementSibling;
+      if (amountInput && amountInput.type === "number") {
+        amountInput.focus();
+        event.preventDefault();
+      }
+    } else if (event.target.type === "number") {
+      // If last item, add new one
+      if (index === data.items.length - 1) {
+        addItem();
+        event.preventDefault();
+      } else {
+        // Move to next item's name input
+        const nextItem = document.querySelectorAll('#list .item')[index + 1];
+        if (nextItem) {
+          const nextNameInput = nextItem.querySelector('input[type="text"]');
+          if (nextNameInput) {
+            nextNameInput.focus();
+            event.preventDefault();
+          }
+        }
+      }
+    }
+  }
+  // Esc on any input: blur
+  if (event.key === "Escape") {
+    event.target.blur();
+  }
 }
 
 function escHtml(s) {
@@ -518,9 +606,13 @@ function addItem() {
   data.items.push(["新的支出", 0]);
   save();
   render();
-  // focus the new name input
-  const inputs = document.querySelectorAll('#list .item input[type="text"]');
-  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+
+function confirmRemoveItem(i) {
+  const itemName = data.items[i][0] || "這個項目";
+  if (confirm(`確定要刪除「${itemName}」嗎？`)) {
+    removeItem(i);
+  }
 }
 
 function removeItem(i) {
@@ -530,7 +622,12 @@ function removeItem(i) {
 }
 
 function changeName(i, v) {
-  data.items[i][0] = v;
+  // Prevent empty names
+  if (!v.trim()) {
+    data.items[i][0] = "未命名支出";
+  } else {
+    data.items[i][0] = v.trim();
+  }
   save();
 }
 
@@ -544,6 +641,13 @@ document.getElementById("income").onchange = function () {
   data.income = Number(this.value) || 0;
   save();
   calculate();
+};
+
+document.getElementById("income").onkeydown = function(event) {
+  if (event.key === "Enter") {
+    document.querySelector('.add-btn').click();
+    event.preventDefault();
+  }
 };
 
 function calculate() {
@@ -586,7 +690,15 @@ function updateChart() {
     options: {
       responsive: true,
       plugins: {
-        legend: { position: "bottom", labels: { font: { family: "'Noto Sans TC'" }, padding: 12 } },
+        legend: { 
+          position: "bottom", 
+          labels: { 
+            font: { family: "'Noto Sans TC'" }, 
+            padding: 12,
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
+        },
         tooltip: {
           callbacks: {
             label: ctx => ` ${ctx.label}: NT$ ${ctx.raw.toLocaleString()}`
@@ -597,7 +709,60 @@ function updateChart() {
   });
 }
 
+function exportData() {
+  save();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "money-manager-backup.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData() {
+  document.getElementById("importFile").click();
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const importedData = JSON.parse(reader.result);
+      if (importedData.income !== undefined && importedData.items) {
+        data = importedData;
+        save();
+        render();
+        alert("資料匯入成功！");
+      } else {
+        alert("檔案格式不正確，請匯入由本工具匯出的 JSON 檔案。");
+      }
+    } catch {
+      alert("檔案讀取失敗，請確認檔案是有效的 JSON 格式。");
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = "";
+}
+
+function resetData() {
+  if (confirm("確定要重設所有資料嗎？此操作無法復原。")) {
+    data = { income: 0, items: defaultItems };
+    save();
+    render();
+  }
+}
+
+// Initialize
 render();
+// Auto-focus income input on page load
+setTimeout(() => {
+  if (!document.getElementById("income").value) {
+    document.getElementById("income").focus();
+  }
+}, 100);
 </script>
 </body>
 </html>

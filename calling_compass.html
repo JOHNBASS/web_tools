@@ -600,10 +600,18 @@ input[type="file"] {
 
 <script>
 let data = JSON.parse(localStorage.getItem("callingCompass") || '{"roles":[]}');
+let saveTimeout;
 
 const GIFT_KEYS = ["create","teach","lead","manage","care"];
 
 let radarChart;
+
+function showSaveNotice() {
+  const notice = document.getElementById("saveNotice");
+  notice.classList.add("show");
+  clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => notice.classList.remove("show"), 2000);
+}
 
 function initChart() {
   const ctx = document.getElementById("chart");
@@ -623,7 +631,14 @@ function initChart() {
     options: {
       responsive: true,
       scales: { r: { min: 0, max: 10, ticks: { stepSize: 2 }, pointLabels: { font: { family: "'Noto Sans TC'", size: 13 } } } },
-      plugins: { legend: { display: false } }
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.raw}/10`
+          }
+        }
+      }
     }
   });
 }
@@ -636,6 +651,25 @@ function onSlider() {
     radarChart.data.datasets[0].data = GIFT_KEYS.map(k => Number(document.getElementById(k).value));
     radarChart.update();
   }
+  autoSave();
+  updateProgress();
+}
+
+function autoSave() {
+  // Collect current field values
+  data.name = document.getElementById("name").value;
+  data.vision = document.getElementById("vision").value;
+  data.story = document.getElementById("story").value;
+  data.interview = document.getElementById("interview").value;
+  data.mission = document.getElementById("mission").value;
+  
+  // Save gifts
+  data.gifts = {};
+  const labels = ["創造","教導","領導","管理","關懷"];
+  GIFT_KEYS.forEach((k, i) => { data.gifts[labels[i]] = document.getElementById(k).value; });
+  
+  localStorage.setItem("callingCompass", JSON.stringify(data));
+  showSaveNotice();
   updateProgress();
 }
 
@@ -667,26 +701,18 @@ function load() {
 }
 
 function save() {
-  data.name = document.getElementById("name").value;
-  data.vision = document.getElementById("vision").value;
-  data.story = document.getElementById("story").value;
-  data.interview = document.getElementById("interview").value;
-  data.mission = document.getElementById("mission").value;
-  data.gifts = {};
-  const labels = ["創造","教導","領導","管理","關懷"];
-  GIFT_KEYS.forEach((k, i) => { data.gifts[labels[i]] = document.getElementById(k).value; });
-  localStorage.setItem("callingCompass", JSON.stringify(data));
-
+  autoSave();
   const notice = document.getElementById("saveNotice");
   notice.classList.add("show");
   setTimeout(() => notice.classList.remove("show"), 2500);
-
-  updateProgress();
 }
 
 function addRole() {
   const n = document.getElementById("roleName").value.trim();
-  if (!n) { document.getElementById("roleName").focus(); return; }
+  if (!n) { 
+    document.getElementById("roleName").focus(); 
+    return; 
+  }
   data.roles = data.roles || [];
   data.roles.push({ name: n, why: document.getElementById("roleWhy").value.trim(), score: 50 });
   localStorage.setItem("callingCompass", JSON.stringify(data));
@@ -694,13 +720,19 @@ function addRole() {
   document.getElementById("roleWhy").value = "";
   renderRoles();
   updateProgress();
+  showSaveNotice();
+  document.getElementById("roleName").focus();
 }
 
 function removeRole(i) {
-  data.roles.splice(i, 1);
-  localStorage.setItem("callingCompass", JSON.stringify(data));
-  renderRoles();
-  updateProgress();
+  const roleName = data.roles[i].name || "這個角色";
+  if (confirm(`確定要刪除「${roleName}」嗎？`)) {
+    data.roles.splice(i, 1);
+    localStorage.setItem("callingCompass", JSON.stringify(data));
+    renderRoles();
+    updateProgress();
+    showSaveNotice();
+  }
 }
 
 function renderRoles() {
@@ -750,10 +782,21 @@ function escHtml(s) {
   return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// Attach progress tracking to text fields
+// Attach auto-save and progress tracking to text fields
 ["name","vision","story","interview","mission"].forEach(id => {
-  document.getElementById(id).addEventListener("input", updateProgress);
+  const el = document.getElementById(id);
+  el.addEventListener("input", () => {
+    autoSave();
+    updateProgress();
+  });
 });
+
+// Auto-focus first field on load
+setTimeout(() => {
+  if (!document.getElementById("name").value) {
+    document.getElementById("name").focus();
+  }
+}, 100);
 
 load();
 initChart();
