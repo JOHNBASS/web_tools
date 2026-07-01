@@ -332,6 +332,9 @@ function calculate() {
             saveState();
             hideLoading();
             console.log('Calculation completed successfully'); // DEBUG
+            
+            // 自動切換到模擬結果標籤
+            switchTab('results');
         } catch (error) {
             console.error('Calculation error:', error);
             hideLoading();
