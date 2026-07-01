@@ -51,8 +51,13 @@ function setTheme(theme) {
 }
 
 function initializeChartDefaults() {
-    Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
-    Chart.defaults.color = '#64748b';
+    if (typeof Chart !== 'undefined') {
+        Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+        Chart.defaults.color = '#64748b';
+    } else {
+        console.warn('Chart.js not available, will retry later');
+        setTimeout(initializeChartDefaults, 500);
+    }
 }
 
 function getChartColors() {
@@ -573,6 +578,10 @@ function createResultsCharts(simulationResults) {
 }
 
 function createAssetLoanChart(simulationResults) {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded, skipping chart creation');
+        return;
+    }
     const ctx = document.getElementById('assetLoanChart');
     if (!ctx) return;
     if (charts.assetLoanChart) charts.assetLoanChart.destroy();
@@ -634,6 +643,10 @@ function createAssetLoanChart(simulationResults) {
 }
 
 function createNetWorthChart(simulationResults) {
+    if (typeof Chart === 'undefined') {
+        console.warn('Chart.js not loaded, skipping chart creation');
+        return;
+    }
     const ctx = document.getElementById('netWorthChart');
     if (!ctx) return;
     if (charts.netWorthChart) charts.netWorthChart.destroy();
