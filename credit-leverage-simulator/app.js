@@ -9,13 +9,26 @@ let currentTheme = 'light';
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
+    console.log('Initializing app...'); // DEBUG
+    
+    // Check if required libraries are loaded
+    if (typeof Chart === 'undefined') {
+        console.error('ERROR: Chart.js is not loaded!');
+        alert('錯誤：Chart.js 圖表庫未加載，請刷新頁面');
+        return;
+    }
+    
     const savedTheme = localStorage.getItem('theme') || 'light';
     setTheme(savedTheme);
     initializeForm();
     setupEventListeners();
     initializeChartDefaults();
     loadSavedState();
-    setTimeout(calculate, 100);
+    
+    console.log('App initialized successfully'); // DEBUG
+    
+    // Don't auto-calculate on load - wait for user action
+    // setTimeout(calculate, 100);
 }
 
 // ===== Theme Management =====
@@ -293,22 +306,34 @@ function addCustomYear() {
 
 // ===== Core Calculation =====
 function calculate() {
+    console.log('calculate() called'); // DEBUG
     showLoading();
     setTimeout(() => {
         try {
+            console.log('Starting calculation...'); // DEBUG
             const formData = getFormData();
+            console.log('Form data:', formData); // DEBUG
+            
             const loanResults = calculateLoan(formData);
+            console.log('Loan results calculated'); // DEBUG
+            
             const investmentResults = calculateInvestment(formData, loanResults);
+            console.log('Investment results calculated'); // DEBUG
+            
             simulationResults = combineResults(formData, loanResults, investmentResults);
+            console.log('Results combined'); // DEBUG
             
             updateDashboard(simulationResults);
             updateResultsTab(simulationResults);
             updateAnalysisTab(simulationResults);
             saveState();
             hideLoading();
+            console.log('Calculation completed successfully'); // DEBUG
         } catch (error) {
             console.error('Calculation error:', error);
             hideLoading();
+            // Show error to user
+            alert('計算發生錯誤，請打開瀏覽器控制台查看詳情');
         }
     }, 100);
 }
@@ -872,6 +897,9 @@ function runMonteCarlo() {
 // Export to global
 window.toggleTheme = toggleTheme;
 window.calculate = calculate;
+
+// Verify exports
+console.log('Functions exported to window:', Object.keys(window).filter(k => typeof window[k] === 'function' && k.includes('calculate') || k.includes('toggle'))); // DEBUG
 window.resetForm = resetForm;
 window.loadSample = loadSample;
 window.updateAllocation = updateAllocation;
