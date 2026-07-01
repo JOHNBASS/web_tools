@@ -111,15 +111,18 @@ function toggleCustomPerformance(mode) {
 }
 
 // ===== Allocation =====
-function updateAllocation(value) {
+function updateAllocation(value, fromStrategy = false) {
     const slider = document.getElementById('allocationSlider');
     const display = document.getElementById('allocationValue');
     if (slider) slider.value = value;
     if (display) display.textContent = value + '%';
     
-    if (value == 100) selectStrategy('allInvest');
-    else if (value == 0) selectStrategy('allRepay');
-    else selectStrategy('halfHalf');
+    // Only update strategy if not called from selectStrategy (prevent infinite loop)
+    if (!fromStrategy) {
+        if (value == 100) selectStrategy('allInvest');
+        else if (value == 0) selectStrategy('allRepay');
+        else selectStrategy('halfHalf');
+    }
 }
 
 function setAllocation(value) {
@@ -131,9 +134,9 @@ function selectStrategy(strategy) {
         card.classList.toggle('active', card.dataset.strategy === strategy);
     });
     switch (strategy) {
-        case 'allInvest': updateAllocation(100); break;
-        case 'halfHalf': updateAllocation(50); break;
-        case 'allRepay': updateAllocation(0); break;
+        case 'allInvest': updateAllocation(100, true); break;
+        case 'halfHalf': updateAllocation(50, true); break;
+        case 'allRepay': updateAllocation(0, true); break;
     }
 }
 
