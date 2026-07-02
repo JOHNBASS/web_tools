@@ -414,14 +414,7 @@ function calculateLoan(formData) {
         } else {
             remaining -= principal;
         }
-        
-        if (month === totalMonths || remaining <= 0) {
-            payment = remaining + (remaining * monthlyRate);
-            interest = remaining * monthlyRate;
-            principal = remaining;
-            remaining = 0;
-        }
-        
+
         results.totalPayment += payment;
         results.totalInterest += interest;
         results.amortization.push({ month, payment, interest, principal, remaining: Math.max(0, remaining) });
@@ -433,18 +426,25 @@ function calculateLoan(formData) {
 }
 
 function calculateInvestment(formData, loanResults) {
-    const { initialInvestment, avgReturn, volatility, monthlyContribution, 
-            annualContribution, compoundInterest, investmentMode, customReturns, allocationRatio } = formData;
+    const { initialInvestment, loanAmount, avgReturn, volatility, monthlyContribution,
+            annualContribution, investmentMode, customReturns, allocationRatio,
+            earlyRepaymentAmount, earlyRepaymentYear } = formData;
     const { amortization } = loanResults;
     const totalMonths = amortization.length;
-    const results = { monthlyGrowth: [], totalReturn: 0, endingValue: initialInvestment };
-    
-    let currentValue = initialInvestment;
+    const startingPrincipal = initialInvestment + loanAmount;
+    const results = { monthlyGrowth: [], totalReturn: 0, endingValue: startingPrincipal, totalContributions: 0 };
+
+    // 槓桿投資：借款與自有本金從一開始就一起投入市場
+    let currentValue = startingPrincipal;
+    let cumulativeExtraRepayment = 0;
+    let totalContributions = 0;
+
     for (let month = 0; month < totalMonths; month++) {
         const year = Math.floor(month / 12);
+        const calendarYear = year + 1;
         let monthlyReturnRate = 0;
-        
-        if (investmentMode === 'custom' && customReturns[2025 + year]) {
+
+        if (investmentMode === 'custom' && customReturns[2025 + year] !== undefined) {
             monthlyReturnRate = Math.pow(1 + customReturns[2025 + year], 1/12) - 1;
         } else if (investmentMode === 'random') {
             const randomFactor = (Math.random() - 0.5) * 2;
@@ -452,65 +452,90 @@ function calculateInvestment(formData, loanResults) {
         } else {
             monthlyReturnRate = Math.pow(1 + avgReturn, 1/12) - 1;
         }
-        
+
         const prevValue = currentValue;
         currentValue *= (1 + monthlyReturnRate);
-        currentValue += monthlyContribution;
-        
-        if (month % 12 === 0 && month > 0) {
-            currentValue += annualContribution;
+        const investmentGain = currentValue - prevValue; // 純粹市場漲跌造成的損益，不含新增資金
+
+        // 貸款「應繳」餘額（不含提前還款效果的基準排程）
+        const scheduledRemaining = amortization[month]?.remaining || 0;
+        const outstandingLoan = Math.max(0, scheduledRemaining - cumulativeExtraRepayment);
+
+        // 一次性提前還款：只在指定年份的第一個月觸發一次
+        let earlyRepayment = 0;
+        if (earlyRepaymentAmount > 0 && earlyRepaymentYear > 0 && calendarYear === earlyRepaymentYear && month % 12 === 0) {
+            earlyRepayment = Math.min(earlyRepaymentAmount, outstandingLoan);
         }
-        
-        const investmentGain = currentValue - prevValue - monthlyContribution - (month % 12 === 0 && month > 0 ? annualContribution : 0);
-        const amountToRepay = investmentGain * (1 - allocationRatio);
-        
-        results.monthlyGrowth.push({ month: month + 1, year: year + 1, value: currentValue, 
-                                     return: monthlyReturnRate * 12 * 100, contribution: monthlyContribution + (month % 12 === 0 && month > 0 ? annualContribution : 0),
-                                     gain: investmentGain, amountToRepay });
+
+        // 只有正報酬才提撥還款，虧損不會「反向」增加貸款餘額；還清後不再提撥
+        const gainRepaymentBudget = Math.max(0, investmentGain) * (1 - allocationRatio);
+        const repaymentFromInvestment = Math.min(gainRepaymentBudget, Math.max(0, outstandingLoan - earlyRepayment));
+
+        const totalRepaymentThisMonth = earlyRepayment + repaymentFromInvestment;
+        currentValue -= totalRepaymentThisMonth; // 用於還款的資金從投資部位提領，不會重複計入資產
+        cumulativeExtraRepayment += totalRepaymentThisMonth;
+
+        const periodContribution = monthlyContribution + ((month % 12 === 0 && month > 0) ? annualContribution : 0);
+        currentValue += periodContribution;
+        totalContributions += periodContribution;
+
+        results.monthlyGrowth.push({
+            month: month + 1,
+            year: calendarYear,
+            value: currentValue,
+            return: monthlyReturnRate * 12 * 100,
+            contribution: periodContribution,
+            gain: investmentGain,
+            earlyRepayment,
+            amountToRepay: repaymentFromInvestment,
+            remainingLoan: Math.max(0, scheduledRemaining - cumulativeExtraRepayment)
+        });
     }
-    
-    results.totalReturn = currentValue - initialInvestment - (monthlyContribution * totalMonths) - (annualContribution * (totalMonths / 12));
+
+    results.totalReturn = currentValue - startingPrincipal - totalContributions;
     results.endingValue = currentValue;
+    results.totalContributions = totalContributions;
     return results;
 }
 
 function combineResults(formData, loanResults, investmentResults) {
-    const { loanAmount, earlyRepaymentAmount, earlyRepaymentYear } = formData;
+    const { loanAmount, initialInvestment } = formData;
     const { amortization, totalInterest } = loanResults;
     const { monthlyGrowth, totalReturn, endingValue } = investmentResults;
     const results = [];
     const totalMonths = Math.min(amortization.length, monthlyGrowth.length);
-    let cumulativeRepayment = 0;
-    
+
     for (let month = 0; month < totalMonths; month++) {
-        const year = Math.floor(month / 12) + 1;
         const loanData = amortization[month] || {};
         const investmentData = monthlyGrowth[month] || {};
-        
+
         const investmentAsset = investmentData.value || 0;
-        const remainingLoan = loanData.remaining || 0;
-        
-        let earlyRepayment = 0;
-        if (earlyRepaymentAmount > 0 && earlyRepaymentYear > 0 && year === earlyRepaymentYear) {
-            earlyRepayment = Math.min(earlyRepaymentAmount, remainingLoan);
-            cumulativeRepayment += earlyRepayment;
-        }
-        
-        const repaymentFromInvestment = investmentData.amountToRepay || 0;
-        const adjustedRemainingLoan = Math.max(0, remainingLoan - earlyRepayment - repaymentFromInvestment);
-        const adjustedNetWorth = investmentAsset - adjustedRemainingLoan + loanAmount - cumulativeRepayment;
-        
-        results.push({ year, month: month + 1, investmentAsset, investmentReturn: investmentData.return || 0,
-                      loanPayment: loanData.payment || 0, interestPaid: loanData.interest || 0,
-                      principalPaid: loanData.principal || 0, remainingLoan: adjustedRemainingLoan,
-                      netWorth: adjustedNetWorth, earlyRepayment, repaymentFromInvestment });
+        // 提前還款與投資收益還款的累積效果已經在 calculateInvestment 中計算好
+        const remainingLoan = investmentData.remainingLoan !== undefined ? investmentData.remainingLoan : (loanData.remaining || 0);
+        const netWorth = investmentAsset - remainingLoan;
+
+        results.push({
+            year: investmentData.year || Math.floor(month / 12) + 1,
+            month: month + 1,
+            investmentAsset,
+            investmentReturn: investmentData.return || 0,
+            investmentGain: investmentData.gain || 0,
+            contribution: investmentData.contribution || 0,
+            loanPayment: loanData.payment || 0,
+            interestPaid: loanData.interest || 0,
+            principalPaid: loanData.principal || 0,
+            remainingLoan,
+            netWorth,
+            earlyRepayment: investmentData.earlyRepayment || 0,
+            repaymentFromInvestment: investmentData.amountToRepay || 0
+        });
     }
-    
+
     const finalResult = results[results.length - 1] || {};
-    const leverageRatio = loanAmount > 0 ? (endingValue / loanAmount).toFixed(2) + 'x' : '0x';
-    const netProfit = (endingValue - loanAmount) - (finalResult.remainingLoan || 0);
-    
-    return { results, summary: { totalReturn, totalInterest, netProfit, leverageRatio, endingValue, 
+    const leverageRatio = initialInvestment > 0 ? (loanAmount / initialInvestment).toFixed(2) + 'x' : '0x';
+    const netProfit = (totalReturn || 0) - (totalInterest || 0);
+
+    return { results, summary: { totalReturn, totalInterest, netProfit, leverageRatio, endingValue,
                remainingLoan: finalResult.remainingLoan || 0, netWorth: finalResult.netWorth || 0 } };
 }
 
@@ -551,42 +576,28 @@ function updateResultsTable(results) {
     const showMonthly = document.getElementById('showMonthly')?.checked || false;
     const tableBody = document.getElementById('resultsTableBody');
     if (!tableBody) return;
-    
+
     tableBody.innerHTML = '';
     const dataToShow = showMonthly ? results : filterYearlyResults(results);
-    
-    dataToShow.forEach((result, index) => {
-        const year = result.year || Math.floor((result.month || 1) / 12) + 1;
-        const month = showMonthly ? result.month || 1 : year;
-        
-        // 计算当期数据
-        const prevResult = index > 0 ? dataToShow[index - 1] : null;
-        const prevInvestmentAsset = prevResult?.investmentAsset || 0;
-        const prevContribution = prevResult?.contribution || 0;
-        
-        // 当期投资收益（金额）
-        const investmentGain = (result.investmentAsset || 0) - prevInvestmentAsset - (result.contribution || 0);
-        
-        // 当期净利 = 投资收益 - 利息支出
+
+    dataToShow.forEach(result => {
+        const label = showMonthly ? '第 ' + (result.month || 1) + ' 月' : '第 ' + result.year + ' 年';
+
+        // 當期投資收益（純市場漲跌，不含新增資金），逐年模式下已在 filterYearlyResults 加總
+        const investmentGain = result.investmentGain || 0;
+
+        // 當期淨利 = 投資收益 - 利息支出
         const netProfit = investmentGain - (result.interestPaid || 0);
-        
-        // 如果是逐年显示，计算年总额
-        const monthlyPayment = result.loanPayment || 0;
-        const yearlyPayment = showMonthly ? monthlyPayment : monthlyPayment * 12;
-        const yearlyInterest = showMonthly ? (result.interestPaid || 0) : (result.interestPaid || 0) * 12;
-        const yearlyPrincipal = showMonthly ? (result.principalPaid || 0) : (result.principalPaid || 0) * 12;
-        const yearlyInvestmentGain = showMonthly ? investmentGain : investmentGain * 12;
-        const yearlyNetProfit = showMonthly ? netProfit : netProfit * 12;
-        
+
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${showMonthly ? '第 ' + month + ' 月' : '第 ' + year + ' 年'}</td>
+            <td>${label}</td>
             <td>${formatCurrency(result.investmentAsset || 0)}</td>
             <td class="${result.investmentReturn > 0 ? 'text-success' : result.investmentReturn < 0 ? 'text-danger' : ''}">
                 ${formatPercentage(result.investmentReturn || 0)}</td>
-            <td>${formatCurrency(monthlyPayment)}</td>
-            <td>${formatCurrency(yearlyInterest)}</td>
-            <td>${formatCurrency(yearlyPrincipal)}</td>
+            <td>${formatCurrency(result.loanPayment || 0)}</td>
+            <td>${formatCurrency(result.interestPaid || 0)}</td>
+            <td>${formatCurrency(result.principalPaid || 0)}</td>
             <td class="${investmentGain > 0 ? 'text-success' : investmentGain < 0 ? 'text-danger' : ''}">
                 ${formatCurrency(investmentGain)}</td>
             <td class="${netProfit > 0 ? 'text-success' : netProfit < 0 ? 'text-danger' : ''}">
@@ -600,12 +611,28 @@ function updateResultsTable(results) {
 }
 
 function filterYearlyResults(results) {
-    const yearly = {};
+    const yearlyMap = {};
     results.forEach(result => {
         const year = result.year || Math.floor((result.month || 1) / 12) + 1;
-        if (!yearly[year]) yearly[year] = result;
+        if (!yearlyMap[year]) {
+            yearlyMap[year] = {
+                year, investmentAsset: 0, remainingLoan: 0, netWorth: 0, investmentReturn: 0,
+                loanPayment: 0, interestPaid: 0, principalPaid: 0, investmentGain: 0
+            };
+        }
+        const y = yearlyMap[year];
+        // 存量欄位取「年底（該年最後一個月）」數值，而非年初
+        y.investmentAsset = result.investmentAsset || 0;
+        y.remainingLoan = result.remainingLoan || 0;
+        y.netWorth = result.netWorth || 0;
+        y.investmentReturn = result.investmentReturn || 0;
+        y.loanPayment = result.loanPayment || 0;
+        // 流量欄位加總整年 12 個月，而非用單一月份 x12 估算
+        y.interestPaid += result.interestPaid || 0;
+        y.principalPaid += result.principalPaid || 0;
+        y.investmentGain += result.investmentGain || 0;
     });
-    return Object.values(yearly).sort((a, b) => a.year - b.year);
+    return Object.values(yearlyMap).sort((a, b) => a.year - b.year);
 }
 
 // ===== Charts =====
@@ -775,7 +802,8 @@ function updateAnalysisTab(simulationResults) {
 }
 
 function updateWorstCase() {
-    const scenario = parseFloat(document.getElementById('worstCaseScenario')?.value || '-50') / 100;
+    // 下拉選單的 value 是正數跌幅（例如選 "-50%" 時 value="50"），需要取負號才是真正的跌幅報酬率
+    const scenario = -Math.abs(parseFloat(document.getElementById('worstCaseScenario')?.value || '50')) / 100;
     const formData = { ...getFormData(), avgReturn: scenario };
     const loanResults = calculateLoan(formData);
     const investmentResults = calculateInvestment(formData, loanResults);
@@ -801,11 +829,13 @@ function updateBestCase() {
 function updateSensitivity(type, value) {
     const formData = getFormData();
     if (type === 'interest') {
+        updateElementText('interestSensitivityValue', value + '%');
         const rate = parseFloat(value) / 100;
         const lowFormData = { ...formData, annualRate: rate - 0.01 };
         const highFormData = { ...formData, annualRate: rate + 0.01 };
         processSensitivity(lowFormData, highFormData, 'sensitivityLowInterest', 'sensitivityHighInterest');
     } else if (type === 'return') {
+        updateElementText('returnSensitivityValue', value + '%');
         const rate = parseFloat(value) / 100;
         const lowFormData = { ...formData, avgReturn: rate - 0.05 };
         const highFormData = { ...formData, avgReturn: rate + 0.05 };
@@ -838,8 +868,9 @@ function updateAIAnalysis() {
     updateElementText('aiLeverage', leverageRatio + 'x');
     updateElementText('aiBankruptcyProb', (100 - successProbability).toFixed(1) + '%');
     
-    let projectedReturn = formData.initialInvestment * Math.pow(1 + formData.avgReturn, formData.loanYears || 20);
-    updateElementText('aiProjectedAssets', formatCurrency(projectedReturn - formData.loanAmount, '$'));
+    // 借款與自有本金一起投入市場（槓桿效果），粗略推算（不含還款排程）
+    let projectedAssets = (formData.initialInvestment + formData.loanAmount) * Math.pow(1 + formData.avgReturn, formData.loanYears || 20);
+    updateElementText('aiProjectedAssets', formatCurrency(projectedAssets - formData.loanAmount, '$'));
     
     let recommendation = '';
     if (leverageRatio < 1) {
@@ -880,44 +911,57 @@ function runMonteCarlo() {
     const years = parseInt(document.getElementById('mcYears')?.value || '20');
     const avgReturn = parseFloat(document.getElementById('mcAvgReturn')?.value || '10') / 100;
     const volatility = parseFloat(document.getElementById('mcVolatility')?.value || '20') / 100;
-    
+
     showLoading('mcLoading');
     hideElement('mcResults');
     hideElement('mcCharts');
     hideElement('mcPercentiles');
-    
+
     setTimeout(() => {
         try {
-            const results = [];
-            for (let i = 0; i < Math.min(simulations, 5000); i++) {
-                let value = 1;
-                for (let year = 0; year < years; year++) {
-                    const returnRate = avgReturn + volatility * (Math.random() - 0.5) * 2;
-                    value *= (1 + returnRate);
-                }
-                results.push(value);
+            // 沿用目前的貸款/投資設定，只把年限、報酬率與波動率換成蒙地卡羅參數，
+            // 讓「淨資產」「資不抵債率」等欄位真正反映槓桿模型，而不是脫離貸款的抽象倍數
+            const baseFormData = {
+                ...getFormData(),
+                loanYears: years,
+                avgReturn,
+                volatility,
+                investmentMode: 'random'
+            };
+            const loanResults = calculateLoan(baseFormData);
+
+            const trialCount = Math.min(simulations, 5000);
+            const netWorths = [];
+            for (let i = 0; i < trialCount; i++) {
+                const investmentResults = calculateInvestment(baseFormData, loanResults);
+                const combined = combineResults(baseFormData, loanResults, investmentResults);
+                const finalResult = combined.results[combined.results.length - 1] || {};
+                netWorths.push(finalResult.netWorth || 0);
             }
-            
-            const sortedResults = results.sort((a, b) => a - b);
-            const sum = sortedResults.reduce((acc, val) => acc + val, 0);
-            const mean = sum / sortedResults.length;
-            const median = sortedResults[Math.floor(sortedResults.length / 2)];
-            const best = Math.max(...sortedResults);
-            const worst = Math.min(...sortedResults);
-            const successCount = sortedResults.filter(v => v > 1).length;
-            const successRate = (successCount / sortedResults.length * 100).toFixed(2);
-            const failureRate = ((sortedResults.length - successCount) / sortedResults.length * 100).toFixed(2);
-            
+
+            const sortedResults = netWorths.sort((a, b) => a - b);
+            const n = sortedResults.length;
+            const mean = sortedResults.reduce((acc, val) => acc + val, 0) / n;
+            const median = sortedResults[Math.floor(n / 2)];
+            const best = sortedResults[n - 1];
+            const worst = sortedResults[0];
+            const variance = sortedResults.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / n;
+            const stdDev = Math.sqrt(variance);
+            const successCount = sortedResults.filter(v => v > 0).length;
+            const successRate = (successCount / n * 100).toFixed(2);
+            const bankruptcyRate = ((n - successCount) / n * 100).toFixed(2);
+
             updateElementText('mcAverage', formatCurrency(mean, '$'));
             updateElementText('mcMedian', formatCurrency(median, '$'));
             updateElementText('mcBest', formatCurrency(best, '$'));
             updateElementText('mcWorst', formatCurrency(worst, '$'));
             updateElementText('mcSuccessRate', successRate + '%');
-            updateElementText('mcBankruptcyRate', failureRate + '%');
-            
+            updateElementText('mcBankruptcyRate', bankruptcyRate + '%');
+            updateElementText('mcStdDev', formatCurrency(stdDev, '$'));
+
             hideLoading('mcLoading');
             showElement('mcResults');
-            
+
         } catch (error) {
             console.error('Monte Carlo error:', error);
             hideLoading('mcLoading');
